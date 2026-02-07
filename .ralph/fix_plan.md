@@ -39,8 +39,8 @@
 ## Phase 6: Testing & QA
 - [x] Unit tests for core systems (mining, combat, inventory, save)
 - [x] Integration tests (full game loop)
-- [ ] Performance profiling (60 FPS on tablet)
-- [ ] Build verification (npm run build → clean dist)
+- [x] Performance profiling (60 FPS on tablet)
+- [x] Build verification (npm run build → clean dist)
 
 ## Completed
 - [x] Project enabled for Ralph
