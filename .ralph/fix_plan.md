@@ -37,7 +37,7 @@
 - [x] Visual polish (bloom, glow shaders, tier coloring, particles)
 
 ## Phase 6: Testing & QA
-- [ ] Unit tests for core systems (mining, combat, inventory, save)
+- [x] Unit tests for core systems (mining, combat, inventory, save)
 - [ ] Integration tests (full game loop)
 - [ ] Performance profiling (60 FPS on tablet)
 - [ ] Build verification (npm run build → clean dist)
