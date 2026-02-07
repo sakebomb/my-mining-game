@@ -7,3 +7,7 @@ dist/
 *.tsbuildinfo
 .vite/
 coverage/
+
+# Ralph and Claude state
+.ralph/
+.ralphrc
