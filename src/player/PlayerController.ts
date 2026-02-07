@@ -42,6 +42,13 @@ export class PlayerController {
   private keys = new Map<string, boolean>();
   private isLocked = false;
 
+  // Touch input overrides (set externally by TouchControls)
+  touchMoveX = 0;
+  touchMoveZ = 0;
+  touchJump = false;
+  touchLookDeltaX = 0;
+  touchLookDeltaY = 0;
+
   constructor(camera: THREE.PerspectiveCamera, world: WorldManager) {
     this.camera = camera;
     this.world = world;
@@ -83,15 +90,30 @@ export class PlayerController {
     // Clamp dt to prevent tunneling on lag spikes
     dt = Math.min(dt, 0.05);
 
+    // Apply touch look deltas
+    if (this.touchLookDeltaX !== 0 || this.touchLookDeltaY !== 0) {
+      this.yaw -= this.touchLookDeltaX;
+      this.pitch -= this.touchLookDeltaY;
+      this.pitch = Math.max(-Math.PI / 2 + 0.01, Math.min(Math.PI / 2 - 0.01, this.pitch));
+      this.touchLookDeltaX = 0;
+      this.touchLookDeltaY = 0;
+    }
+
     // Check if player AABB overlaps any ladder block
     this.onLadder = this.checkLadderOverlap(this.position);
 
-    // Movement direction from keys
+    // Movement direction from keys + touch
     const moveDir = new THREE.Vector3(0, 0, 0);
     if (this.isKeyDown('KeyW') || this.isKeyDown('ArrowUp')) moveDir.z -= 1;
     if (this.isKeyDown('KeyS') || this.isKeyDown('ArrowDown')) moveDir.z += 1;
     if (this.isKeyDown('KeyA') || this.isKeyDown('ArrowLeft')) moveDir.x -= 1;
     if (this.isKeyDown('KeyD') || this.isKeyDown('ArrowRight')) moveDir.x += 1;
+
+    // Blend in touch input
+    if (Math.abs(this.touchMoveX) > 0.1 || Math.abs(this.touchMoveZ) > 0.1) {
+      moveDir.x += this.touchMoveX;
+      moveDir.z += this.touchMoveZ;
+    }
 
     if (moveDir.lengthSq() > 0) {
       moveDir.normalize();
@@ -107,18 +129,21 @@ export class PlayerController {
     this.velocity.x = worldMoveX * PLAYER_SPEED;
     this.velocity.z = worldMoveZ * PLAYER_SPEED;
 
+    // Check for jump (keyboard or touch)
+    const wantsJump = this.isKeyDown('Space') || this.isKeyDown('KeySpace') || this.touchJump;
+
     if (this.onLadder) {
       // On ladder: suppress gravity, allow vertical movement
       const climbSpeed = PLAYER_SPEED * 0.7;
-      if (this.isKeyDown('Space')) {
+      if (wantsJump) {
         this.velocity.y = climbSpeed; // climb up
       } else if (this.isKeyDown('ShiftLeft') || this.isKeyDown('ShiftRight')) {
         this.velocity.y = -climbSpeed; // climb down
       } else if (moveDir.z < 0) {
-        // W key: climb up (forward = up on ladder)
+        // W key / forward joystick: climb up
         this.velocity.y = climbSpeed;
       } else if (moveDir.z > 0) {
-        // S key: climb down
+        // S key / back joystick: climb down
         this.velocity.y = -climbSpeed;
       } else {
         this.velocity.y = 0; // cling to ladder
@@ -129,7 +154,7 @@ export class PlayerController {
       this.velocity.y += GRAVITY * dt;
 
       // Jump
-      if ((this.isKeyDown('Space') || this.isKeyDown('KeySpace')) && this.onGround) {
+      if (wantsJump && this.onGround) {
         this.velocity.y = PLAYER_JUMP_FORCE;
         this.onGround = false;
       }

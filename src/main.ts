@@ -14,6 +14,7 @@ import { TradingUI } from './ui/TradingUI';
 import { TeleportSystem } from './world/TeleportSystem';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
+import { TouchControls } from './input/TouchControls';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -170,6 +171,13 @@ const physics = new PhysicsWorld();
 
 // --- Audio ---
 const audio = new AudioManager();
+
+// --- Touch Controls ---
+const touchControls = new TouchControls();
+// Auto-enable on touch devices
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+  touchControls.enable();
+}
 
 // --- Combat ---
 const combat = new CombatSystem(player, inventory);
@@ -382,12 +390,27 @@ function animate(): void {
   const dt = clock.getDelta();
   frameCount++;
 
+  // Feed touch input to player
+  if (touchControls.enabled) {
+    player.touchMoveX = touchControls.moveX;
+    player.touchMoveZ = touchControls.moveZ;
+    const look = touchControls.consumeLookDelta();
+    player.touchLookDeltaX = look.dx;
+    player.touchLookDeltaY = look.dy;
+    player.touchJump = touchControls.consumeJump();
+  }
+
   // Update player
   player.update(dt);
 
   // Update world chunks around player (every 10 frames to reduce load)
   if (frameCount % 10 === 0) {
     world.update(player.position.x, player.position.y, player.position.z);
+  }
+
+  // Feed touch mining state
+  if (touchControls.enabled) {
+    mining.touchMining = touchControls.isMining;
   }
 
   // Update mining

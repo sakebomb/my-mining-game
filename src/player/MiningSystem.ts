@@ -27,6 +27,7 @@ export class MiningSystem {
 
   // Mining state
   private isMining = false;
+  touchMining = false; // external touch input
   private mineTimer = 0;
   private currentTarget: MineTarget | null = null;
 
@@ -123,8 +124,9 @@ export class MiningSystem {
       this.placeLadder(target);
     }
 
-    // Handle mining
-    if (this.isMining && target) {
+    // Handle mining (mouse or touch)
+    const mining = this.isMining || this.touchMining;
+    if (mining && target) {
       // Tier gate: check if pickaxe is strong enough
       const blockDef = BLOCK_DEFS[target.blockType];
       const playerTier = this.inventory?.getMineTier() ?? 0;
