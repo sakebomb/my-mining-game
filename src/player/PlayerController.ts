@@ -8,6 +8,7 @@ import {
   PLAYER_START_HEALTH,
   GRAVITY,
   BLOCK_SIZE,
+  WORLD_BORDER,
 } from '../config/constants';
 
 /**
@@ -138,6 +139,12 @@ export class PlayerController {
     this.moveAxis(0, this.velocity.x * dt);
     this.moveAxis(1, this.velocity.y * dt);
     this.moveAxis(2, this.velocity.z * dt);
+
+    // World boundaries: clamp position within WORLD_BORDER meters from origin
+    if (this.position.x < -WORLD_BORDER) { this.position.x = -WORLD_BORDER; this.velocity.x = 0; }
+    if (this.position.x > WORLD_BORDER) { this.position.x = WORLD_BORDER; this.velocity.x = 0; }
+    if (this.position.z < -WORLD_BORDER) { this.position.z = -WORLD_BORDER; this.velocity.z = 0; }
+    if (this.position.z > WORLD_BORDER) { this.position.z = WORLD_BORDER; this.velocity.z = 0; }
 
     // Update camera
     this.euler.set(this.pitch, this.yaw, 0);
