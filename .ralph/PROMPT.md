@@ -1,3 +1,14 @@
+## Autonomous Mode Instructions
+You are running autonomously via Ralph (no human in the loop). Follow these rules strictly:
+- **NEVER** use `AskUserQuestion` — there is no user to respond.
+- **NEVER** use `EnterPlanMode` or `ExitPlanMode` — plan mode requires user approval which cannot happen.
+- Make decisions yourself. If multiple approaches exist, pick the simplest one and proceed.
+- Work incrementally: implement one feature/fix per loop, verify it works, commit to a feature branch.
+- Read `.ralph/fix_plan.md` for the current task list. Pick the next unchecked item and work on it.
+- After completing a task, mark it done in `fix_plan.md` and commit your changes.
+
+---
+
 # 3D Mining Game: Dig Deep to Victory
 
 ## Project Goals
