@@ -53,6 +53,7 @@ export enum BlockType {
   // Special
   Bedrock = 50,
   Ladder = 60,
+  Teleport = 61,
 }
 
 export interface BlockDef {

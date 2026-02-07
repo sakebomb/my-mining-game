@@ -139,4 +139,13 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     transparent: true,
     solid: false,
   },
+  [BlockType.Teleport]: {
+    type: BlockType.Teleport,
+    name: 'Teleport Pad',
+    color: 0x44eeff,
+    hardness: Infinity,
+    minTier: Tier.White,
+    transparent: false,
+    solid: true,
+  },
 };

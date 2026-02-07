@@ -24,7 +24,7 @@
 
 ## Phase 4: World Features
 - [x] Ladder placement and climbing
-- [ ] Teleport system (bidirectional, levels 10/20/30/40)
+- [x] Teleport system (bidirectional, levels 10/20/30/40)
 - [ ] World boundaries (500m invisible walls)
 - [ ] Physics integration (cannon-es for player/enemy movement)
 

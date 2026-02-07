@@ -33,5 +33,9 @@ export const ENHANCEMENT_MATERIALS: Record<string, number> = {
 /** Stat boost per enhancement level (multiplicative: 1 + level * boost) */
 export const ENHANCEMENT_STAT_BOOST = 0.1; // +10% per level
 
+/** Teleport system */
+export const TELEPORT_LEVELS = [10, 20, 30, 40]; // depth levels with teleport pads
+export const TELEPORT_COOLDOWN = 2000; // ms between teleports to prevent ping-pong
+
 /** Save */
 export const AUTO_SAVE_INTERVAL = 30_000; // ms

@@ -11,6 +11,7 @@ import { NPC } from './npc/NPC';
 import { EnemyManager } from './npc/EnemyManager';
 import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
+import { TeleportSystem } from './world/TeleportSystem';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -132,6 +133,13 @@ window.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// --- Teleport system ---
+const teleportSystem = new TeleportSystem(world, scene);
+teleportSystem.onTeleport = (fromLevel, toLevel) => {
+  const label = toLevel === 0 ? 'Surface' : `Level ${toLevel}`;
+  showPickupText(`Teleported to ${label}!`);
+};
 
 // --- Enemies ---
 const enemyManager = new EnemyManager(scene, world);
@@ -357,6 +365,16 @@ function animate(): void {
   // Update mining
   mining.update(dt);
 
+  // Check teleport pads
+  const teleportDest = teleportSystem.update(dt, player.position);
+  if (teleportDest) {
+    player.position.copy(teleportDest);
+    player.velocity.set(0, 0, 0);
+    player.onGround = false;
+    // Update world chunks around new position
+    world.update(player.position.x, player.position.y, player.position.z);
+  }
+
   // Update enemies and combat
   if (!tradingUI.isOpen) {
     const enemyDmg = enemyManager.update(dt, player.position);
@@ -405,6 +423,11 @@ function animate(): void {
 }
 
 // Initial world generation
+world.update(player.position.x, player.position.y, player.position.z);
+
+// Place teleport pads after world is generated
+teleportSystem.placePads();
+// Re-update world to rebuild chunk meshes with teleport blocks
 world.update(player.position.x, player.position.y, player.position.z);
 
 animate();
