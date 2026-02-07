@@ -29,7 +29,7 @@
 - [x] Physics integration (cannon-es for player/enemy movement)
 
 ## Phase 5: Polish & UX
-- [ ] Audio system (Howler.js, spatial audio, chiptune BGM)
+- [x] Audio system (Howler.js, spatial audio, chiptune BGM)
 - [ ] Touch controls (nipplejs joystick, swipe look, tap-hold mine)
 - [ ] Save/load system (IndexedDB, auto-save 30s + blur)
 - [ ] PWA setup (manifest, service worker, installable)

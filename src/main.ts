@@ -13,6 +13,7 @@ import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
 import { TeleportSystem } from './world/TeleportSystem';
 import { PhysicsWorld } from './physics/PhysicsWorld';
+import { AudioManager } from './audio/AudioManager';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -70,10 +71,12 @@ mining.setInventory(inventory);
 mining.onMineBlocked = (blockName) => {
   showPickupText(`Need better pickaxe for ${blockName}!`);
 };
-mining.onLadderPlaced = (_success, message) => {
+mining.onLadderPlaced = (success, message) => {
   showPickupText(message);
+  if (success) audio.play('ladder_place');
 };
 mining.onBlockMined = (blockType, _x, _y, _z) => {
+  audio.play('mine_break');
   const def = BLOCK_DEFS[blockType];
   if (def?.dropItem) {
     const added = inventory.addItem(def.dropItem);
@@ -81,6 +84,7 @@ mining.onBlockMined = (blockType, _x, _y, _z) => {
       const itemDef = ITEMS[def.dropItem];
       const name = itemDef?.name ?? def.dropItem;
       showPickupText(`+1 ${name}`);
+      audio.play('pickup');
     } else {
       showPickupText('Inventory full!');
     }
@@ -111,6 +115,9 @@ tradingUI.onToggle = (isOpen) => {
     document.exitPointerLock();
   }
 };
+tradingUI.onTrade = (type) => {
+  audio.play(type);
+};
 
 // NPC interaction prompt
 const npcPrompt = document.createElement('div');
@@ -140,23 +147,29 @@ const teleportSystem = new TeleportSystem(world, scene);
 teleportSystem.onTeleport = (fromLevel, toLevel) => {
   const label = toLevel === 0 ? 'Surface' : `Level ${toLevel}`;
   showPickupText(`Teleported to ${label}!`);
+  audio.play('teleport');
 };
 
 // --- Enemies ---
 const enemyManager = new EnemyManager(scene, world);
 enemyManager.onEnemyDeath = (enemy) => {
+  audio.play('enemy_death');
   const drops = enemy.rollDrops();
   for (const drop of drops) {
     const added = inventory.addItem(drop.itemId, drop.quantity);
     if (added > 0) {
       const name = ITEMS[drop.itemId]?.name ?? drop.itemId;
       showPickupText(`+${added} ${name}`);
+      audio.play('pickup');
     }
   }
 };
 
 // --- Physics ---
 const physics = new PhysicsWorld();
+
+// --- Audio ---
+const audio = new AudioManager();
 
 // --- Combat ---
 const combat = new CombatSystem(player, inventory);
@@ -194,7 +207,7 @@ function spawnHelper(): void {
   inventory.onChange?.();
 }
 
-// H key to craft helper, C key to feed cloth
+// H key to craft helper, C key to feed cloth, M key to toggle mute
 window.addEventListener('keydown', (e) => {
   if (e.code === 'KeyH' && !tradingUI.isOpen) {
     spawnHelper();
@@ -208,6 +221,10 @@ window.addEventListener('keydown', (e) => {
     } else {
       showPickupText('No Cloth to feed Helper!');
     }
+  }
+  if (e.code === 'KeyM') {
+    const muted = audio.toggleMute();
+    showPickupText(muted ? 'Sound: OFF' : 'Sound: ON');
   }
 });
 
@@ -332,13 +349,20 @@ instructions.innerHTML = `
     WASD — Move &nbsp;|&nbsp; Mouse — Look<br>
     Space — Jump &nbsp;|&nbsp; Hold Left Click — Mine<br>
     Right Click — Place Ladder &nbsp;|&nbsp; Space/Shift — Climb Up/Down<br>
-    E — Talk to NPC &nbsp;|&nbsp; H — Craft Helper &nbsp;|&nbsp; C — Feed Cloth
+    E — Talk to NPC &nbsp;|&nbsp; H — Craft Helper &nbsp;|&nbsp; C — Feed Cloth<br>
+    M — Toggle Sound
   </p>
 `;
 document.body.appendChild(instructions);
 
+let bgmStarted = false;
 document.addEventListener('pointerlockchange', () => {
   instructions.style.display = document.pointerLockElement ? 'none' : 'block';
+  // Start BGM on first pointer lock (requires user gesture)
+  if (document.pointerLockElement && !bgmStarted) {
+    bgmStarted = true;
+    audio.startBGM();
+  }
 });
 
 // --- Resize ---
@@ -387,8 +411,12 @@ function animate(): void {
     const enemyDmg = enemyManager.update(dt, player.position);
     if (enemyDmg > 0) {
       player.health = Math.max(0, player.health - enemyDmg);
+      audio.play('player_hurt');
     }
-    combat.update(dt, enemyManager.enemies);
+    const hitEnemy = combat.update(dt, enemyManager.enemies);
+    if (hitEnemy) {
+      audio.play('enemy_hit');
+    }
 
     // Update helper NPC
     if (helper && !helper.expired) {

@@ -20,6 +20,9 @@ export class TradingUI {
   /** Called when trading UI opens/closes (for pointer lock management) */
   onToggle: ((isOpen: boolean) => void) | null = null;
 
+  /** Called when an item is bought, sold, or enhanced */
+  onTrade: ((type: 'buy' | 'sell' | 'enhance_success' | 'enhance_fail') => void) | null = null;
+
   constructor(inventory: Inventory) {
     this.inventory = inventory;
 
@@ -288,6 +291,7 @@ export class TradingUI {
     const removed = this.inventory.removeItem(itemId, quantity);
     this.inventory.money += removed * def.sellPrice;
     this.inventory.onChange?.();
+    this.onTrade?.('sell');
     this.render();
   }
 
@@ -307,6 +311,7 @@ export class TradingUI {
       this.inventory.addItem(itemId);
     }
     this.inventory.onChange?.();
+    this.onTrade?.('buy');
     this.render();
   }
 
@@ -314,6 +319,7 @@ export class TradingUI {
     const result = this.inventory.tryEnhance(slot, materialId);
     if (result.consumed) {
       this.lastEnhanceResult = { success: result.success };
+      this.onTrade?.(result.success ? 'enhance_success' : 'enhance_fail');
     }
     this.render();
   }
