@@ -26,14 +26,34 @@ export class TeleportSystem {
   private pairs: TeleportPair[] = [];
   private cooldownTimer = 0;
   private scene: THREE.Scene;
-  private glowMeshes: THREE.Mesh[] = [];
+  private glowMeshes: Map<number, THREE.Mesh[]> = new Map(); // level → glow meshes
+
+  /** Tracks which teleport levels the player has unlocked by reaching that depth */
+  private activatedLevels: Set<number> = new Set();
 
   /** Callback when player teleports */
   onTeleport: ((fromLevel: number, toLevel: number) => void) | null = null;
 
+  /** Callback when a new teleport level is activated */
+  onActivate: ((level: number) => void) | null = null;
+
   constructor(world: WorldManager, scene: THREE.Scene) {
     this.world = world;
     this.scene = scene;
+  }
+
+  /** Get activated levels for serialization */
+  getActivatedLevels(): number[] {
+    return Array.from(this.activatedLevels);
+  }
+
+  /** Set activated levels from saved data */
+  setActivatedLevels(levels: number[]): void {
+    this.activatedLevels = new Set(levels);
+    // Update glow visuals for already-activated levels
+    for (const level of levels) {
+      this.updateGlowForLevel(level, true);
+    }
   }
 
   /**
@@ -89,9 +109,10 @@ export class TeleportSystem {
         undergroundPos: underWorldPos,
       });
 
-      // Add glow effect meshes
-      this.addGlowEffect(surfaceWorldPos);
-      this.addGlowEffect(underWorldPos);
+      // Add glow effect meshes (start dim — inactive)
+      const surfaceGlow = this.addGlowEffect(surfaceWorldPos, false);
+      const underGlow = this.addGlowEffect(underWorldPos, false);
+      this.glowMeshes.set(level, [surfaceGlow, underGlow]);
     }
   }
 
@@ -131,17 +152,26 @@ export class TeleportSystem {
   }
 
   /** Add a glowing column effect above a teleport pad */
-  private addGlowEffect(pos: THREE.Vector3): void {
+  private addGlowEffect(pos: THREE.Vector3, active: boolean): THREE.Mesh {
     const geo = new THREE.CylinderGeometry(0.4, 0.4, 2, 8);
     const mat = new THREE.MeshBasicMaterial({
       color: 0x44eeff,
       transparent: true,
-      opacity: 0.25,
+      opacity: active ? 0.25 : 0.05,
     });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.position.set(pos.x, pos.y + 1, pos.z);
     this.scene.add(mesh);
-    this.glowMeshes.push(mesh);
+    return mesh;
+  }
+
+  /** Update glow visuals for a specific level */
+  private updateGlowForLevel(level: number, active: boolean): void {
+    const meshes = this.glowMeshes.get(level);
+    if (!meshes) return;
+    for (const mesh of meshes) {
+      (mesh.material as THREE.MeshBasicMaterial).opacity = active ? 0.25 : 0.05;
+    }
   }
 
   /**
@@ -149,24 +179,41 @@ export class TeleportSystem {
    * Returns new player position if teleported, null otherwise.
    */
   update(dt: number, playerPos: THREE.Vector3): THREE.Vector3 | null {
+    // Check if player has reached a new teleport depth level
+    // Underground pad for level N is at world Y ≈ -(N*2 - 1) * BLOCK_SIZE = -(N - 0.5)
+    // Activate when player reaches within 1m of that depth
+    for (const pair of this.pairs) {
+      if (!this.activatedLevels.has(pair.level) && playerPos.y <= pair.undergroundPos.y + 1) {
+        this.activatedLevels.add(pair.level);
+        this.updateGlowForLevel(pair.level, true);
+        this.onActivate?.(pair.level);
+      }
+    }
+
     // Update cooldown
     if (this.cooldownTimer > 0) {
       this.cooldownTimer -= dt * 1000;
       return null;
     }
 
-    // Animate glow meshes
+    // Animate glow meshes — only active ones pulse, inactive stay dim
     const time = performance.now() * 0.001;
-    for (const mesh of this.glowMeshes) {
-      (mesh.material as THREE.MeshBasicMaterial).opacity = 0.15 + 0.15 * Math.sin(time * 2);
+    for (const [level, meshes] of this.glowMeshes) {
+      if (this.activatedLevels.has(level)) {
+        for (const mesh of meshes) {
+          (mesh.material as THREE.MeshBasicMaterial).opacity = 0.15 + 0.15 * Math.sin(time * 2);
+        }
+      }
     }
 
-    // Check if player feet are on a teleport pad
+    // Check if player feet are on a teleport pad (only activated pairs)
     const feetY = playerPos.y;
     const centerX = playerPos.x;
     const centerZ = playerPos.z;
 
     for (const pair of this.pairs) {
+      if (!this.activatedLevels.has(pair.level)) continue;
+
       // Check surface pad
       if (this.isOnPad(centerX, feetY, centerZ, pair.surfacePos)) {
         this.cooldownTimer = TELEPORT_COOLDOWN;
@@ -197,11 +244,13 @@ export class TeleportSystem {
   }
 
   dispose(): void {
-    for (const mesh of this.glowMeshes) {
-      this.scene.remove(mesh);
-      mesh.geometry.dispose();
-      (mesh.material as THREE.Material).dispose();
+    for (const meshes of this.glowMeshes.values()) {
+      for (const mesh of meshes) {
+        this.scene.remove(mesh);
+        mesh.geometry.dispose();
+        (mesh.material as THREE.Material).dispose();
+      }
     }
-    this.glowMeshes = [];
+    this.glowMeshes.clear();
   }
 }

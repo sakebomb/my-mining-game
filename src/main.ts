@@ -132,6 +132,7 @@ const buyerNPC = new NPC({
   position: new THREE.Vector3(5, 0.0, 5),
   color: 0x44aa44,
   interactRadius: 3,
+  role: 'BUYER',
 }, scene);
 
 const sellerNPC = new NPC({
@@ -139,6 +140,7 @@ const sellerNPC = new NPC({
   position: new THREE.Vector3(-5, 0.0, 5),
   color: 0x4488cc,
   interactRadius: 3,
+  role: 'SELLER',
 }, scene);
 
 const npcs = [buyerNPC, sellerNPC];
@@ -197,6 +199,10 @@ const teleportSystem = new TeleportSystem(world, scene);
 teleportSystem.onTeleport = (fromLevel, toLevel) => {
   const label = toLevel === 0 ? 'Surface' : `Level ${toLevel}`;
   showPickupText(`Teleported to ${label}!`);
+  audio.play('teleport');
+};
+teleportSystem.onActivate = (level) => {
+  showPickupText(`Teleport Level ${level} activated!`);
   audio.play('teleport');
 };
 
@@ -576,6 +582,7 @@ saveSystem.onCollectSaveData = (): SaveData => ({
   },
   worldSeed: world.seed,
   timestamp: Date.now(),
+  activatedTeleportLevels: teleportSystem.getActivatedLevels(),
 });
 
 saveSystem.onLoadSaveData = (data: SaveData) => {
@@ -583,6 +590,9 @@ saveSystem.onLoadSaveData = (data: SaveData) => {
   player.position.set(data.player.x, data.player.y, data.player.z);
   player.velocity.set(0, 0, 0);
   player.onGround = false;
+  if (data.activatedTeleportLevels) {
+    teleportSystem.setActivatedLevels(data.activatedTeleportLevels);
+  }
 };
 
 // R key to reset save (with confirmation)

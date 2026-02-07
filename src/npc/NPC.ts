@@ -5,6 +5,7 @@ export interface NPCConfig {
   position: THREE.Vector3;
   color: number;
   interactRadius: number; // distance at which player can interact
+  role?: string; // e.g. 'BUYER', 'SELLER' — shown on a sign beside the NPC
 }
 
 /**
@@ -39,6 +40,42 @@ export class NPC {
     head.position.y = 1.45;
     head.castShadow = true;
     this.mesh.add(head);
+
+    // Sign with role text
+    if (config.role) {
+      const signGroup = new THREE.Group();
+      signGroup.position.set(1, 0, 0); // offset to the right of the NPC
+
+      // Wooden post
+      const postGeo = new THREE.BoxGeometry(0.08, 1.4, 0.08);
+      const postMat = new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.9 });
+      const post = new THREE.Mesh(postGeo, postMat);
+      post.position.y = 0.7;
+      post.castShadow = true;
+      signGroup.add(post);
+
+      // Sign board
+      const boardGeo = new THREE.BoxGeometry(0.8, 0.4, 0.06);
+      const boardCanvas = document.createElement('canvas');
+      boardCanvas.width = 128;
+      boardCanvas.height = 64;
+      const ctx = boardCanvas.getContext('2d')!;
+      ctx.fillStyle = '#a0784c';
+      ctx.fillRect(0, 0, 128, 64);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 22px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(config.role, 64, 32);
+      const boardTex = new THREE.CanvasTexture(boardCanvas);
+      const boardMat = new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.8 });
+      const board = new THREE.Mesh(boardGeo, boardMat);
+      board.position.y = 1.2;
+      board.castShadow = true;
+      signGroup.add(board);
+
+      this.mesh.add(signGroup);
+    }
 
     this.mesh.position.copy(this.position);
     scene.add(this.mesh);

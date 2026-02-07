@@ -20,6 +20,7 @@ export interface SaveData {
   };
   worldSeed: number;
   timestamp: number;
+  activatedTeleportLevels?: number[];
 }
 
 /**

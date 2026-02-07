@@ -72,14 +72,14 @@ export const ITEMS: Record<string, ItemDef | GearDef> = {
   armor_white: { id: 'armor_white', name: 'Diamond Armor', category: 'gear', gearSlot: 'armor', tier: Tier.White, stackable: false, maxStack: 1, sellPrice: 5000, buyPrice: 10000, stats: { defense: 55 } },
 
   // Backpacks
-  backpack_t1: { id: 'backpack_t1', name: 'Small Pouch', category: 'gear', gearSlot: 'backpack', tier: Tier.Stone, stackable: false, maxStack: 1, sellPrice: 0, buyPrice: 0, stats: { slots: 10 } },
-  backpack_t2: { id: 'backpack_t2', name: 'Leather Bag', category: 'gear', gearSlot: 'backpack', tier: Tier.Red, stackable: false, maxStack: 1, sellPrice: 15, buyPrice: 30, stats: { slots: 20 } },
-  backpack_t3: { id: 'backpack_t3', name: 'Iron Chest', category: 'gear', gearSlot: 'backpack', tier: Tier.Orange, stackable: false, maxStack: 1, sellPrice: 50, buyPrice: 100, stats: { slots: 30 } },
-  backpack_t4: { id: 'backpack_t4', name: 'Gold Satchel', category: 'gear', gearSlot: 'backpack', tier: Tier.Yellow, stackable: false, maxStack: 1, sellPrice: 100, buyPrice: 200, stats: { slots: 45 } },
-  backpack_t5: { id: 'backpack_t5', name: 'Emerald Pack', category: 'gear', gearSlot: 'backpack', tier: Tier.Green, stackable: false, maxStack: 1, sellPrice: 200, buyPrice: 400, stats: { slots: 60 } },
-  backpack_t6: { id: 'backpack_t6', name: 'Sapphire Vault', category: 'gear', gearSlot: 'backpack', tier: Tier.Blue, stackable: false, maxStack: 1, sellPrice: 400, buyPrice: 800, stats: { slots: 75 } },
-  backpack_t7: { id: 'backpack_t7', name: 'Amethyst Trunk', category: 'gear', gearSlot: 'backpack', tier: Tier.Indigo, stackable: false, maxStack: 1, sellPrice: 800, buyPrice: 1600, stats: { slots: 90 } },
-  backpack_t8: { id: 'backpack_t8', name: 'Diamond Vault', category: 'gear', gearSlot: 'backpack', tier: Tier.White, stackable: false, maxStack: 1, sellPrice: 2000, buyPrice: 4000, stats: { slots: 120 } },
+  backpack_t1: { id: 'backpack_t1', name: 'Small Pouch', category: 'gear', gearSlot: 'backpack', tier: Tier.Stone, stackable: false, maxStack: 1, sellPrice: 0, buyPrice: 0, stats: { slots: 50 } },
+  backpack_t2: { id: 'backpack_t2', name: 'Leather Bag', category: 'gear', gearSlot: 'backpack', tier: Tier.Red, stackable: false, maxStack: 1, sellPrice: 15, buyPrice: 30, stats: { slots: 70 } },
+  backpack_t3: { id: 'backpack_t3', name: 'Iron Chest', category: 'gear', gearSlot: 'backpack', tier: Tier.Orange, stackable: false, maxStack: 1, sellPrice: 50, buyPrice: 100, stats: { slots: 90 } },
+  backpack_t4: { id: 'backpack_t4', name: 'Gold Satchel', category: 'gear', gearSlot: 'backpack', tier: Tier.Yellow, stackable: false, maxStack: 1, sellPrice: 100, buyPrice: 200, stats: { slots: 110 } },
+  backpack_t5: { id: 'backpack_t5', name: 'Emerald Pack', category: 'gear', gearSlot: 'backpack', tier: Tier.Green, stackable: false, maxStack: 1, sellPrice: 200, buyPrice: 400, stats: { slots: 130 } },
+  backpack_t6: { id: 'backpack_t6', name: 'Sapphire Vault', category: 'gear', gearSlot: 'backpack', tier: Tier.Blue, stackable: false, maxStack: 1, sellPrice: 400, buyPrice: 800, stats: { slots: 150 } },
+  backpack_t7: { id: 'backpack_t7', name: 'Amethyst Trunk', category: 'gear', gearSlot: 'backpack', tier: Tier.Indigo, stackable: false, maxStack: 1, sellPrice: 800, buyPrice: 1600, stats: { slots: 170 } },
+  backpack_t8: { id: 'backpack_t8', name: 'Diamond Vault', category: 'gear', gearSlot: 'backpack', tier: Tier.White, stackable: false, maxStack: 1, sellPrice: 2000, buyPrice: 4000, stats: { slots: 200 } },
 
   // Victory item (buyPrice computed below)
   victory_scepter: {
