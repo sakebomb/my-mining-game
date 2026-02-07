@@ -7,6 +7,7 @@ import {
   CHUNK_SIZE,
   BLOCK_SIZE,
   RENDER_DISTANCE,
+  SHADOW_DISTANCE,
   MAX_DEPTH_BLOCKS,
 } from '../config/constants';
 import { noise2d, fbm2d, noise3d, SeededRNG } from '../utils/noise';
@@ -196,12 +197,12 @@ export class WorldManager {
 
     const needed = new Set<string>();
 
-    // Generate chunks in render distance
+    // Generate chunks in cylindrical render distance
     for (let dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
       for (let dz = -RENDER_DISTANCE; dz <= RENDER_DISTANCE; dz++) {
-        // Vertical: from bedrock to a bit above surface
-        // Surface is around y=0, bedrock at -MAX_DEPTH_BLOCKS
-        // In chunk coords: surface ≈ chunk y=0, bedrock ≈ chunk y = -MAX_DEPTH_BLOCKS/CHUNK_SIZE
+        // Cylindrical culling: skip corners beyond circular radius
+        if (dx * dx + dz * dz > RENDER_DISTANCE * RENDER_DISTANCE) continue;
+
         const minCy = Math.floor(-MAX_DEPTH_BLOCKS / CHUNK_SIZE) - 1;
         const maxCy = 2; // a couple chunks above surface
 
@@ -232,18 +233,26 @@ export class WorldManager {
       }
     }
 
-    // Rebuild dirty chunk meshes
+    // Rebuild dirty chunk meshes (max 4 per update to avoid frame hitches)
     const getNeighborBlock = (wx: number, wy: number, wz: number) => this.getBlock(wx, wy, wz);
+    let rebuilds = 0;
 
     for (const [_key, chunk] of this.chunks) {
-      if (chunk.dirty) {
+      if (chunk.dirty && rebuilds < 4) {
         if (chunk.mesh) {
           this.scene.remove(chunk.mesh);
         }
         const mesh = chunk.buildMesh(getNeighborBlock);
         if (mesh) {
+          // Only enable shadows on nearby chunks
+          const dx = chunk.cx - pcx;
+          const dz = chunk.cz - pcz;
+          const distSq = dx * dx + dz * dz;
+          mesh.castShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE;
+          mesh.receiveShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE;
           this.scene.add(mesh);
         }
+        rebuilds++;
       }
     }
   }

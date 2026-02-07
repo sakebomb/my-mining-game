@@ -43,12 +43,19 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
 
+// --- Device detection ---
+const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
 // --- Post-processing (bloom) ---
 const composer = new EffectComposer(renderer);
 composer.addPass(new RenderPass(scene, camera));
 
+const bloomScale = isMobile ? 0.5 : 1.0;
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  new THREE.Vector2(
+    window.innerWidth * bloomScale,
+    window.innerHeight * bloomScale,
+  ),
   0.4,  // strength — subtle glow
   0.6,  // radius
   0.85, // threshold — only bright emissive surfaces bloom
@@ -59,7 +66,7 @@ composer.addPass(bloomPass);
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
 sun.position.set(30, 50, 30);
 sun.castShadow = true;
-sun.shadow.mapSize.setScalar(2048);
+sun.shadow.mapSize.setScalar(isMobile ? 1024 : 2048);
 sun.shadow.camera.near = 0.5;
 sun.shadow.camera.far = 150;
 sun.shadow.camera.left = -50;

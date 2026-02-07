@@ -38,7 +38,7 @@
 
 ## Phase 6: Testing & QA
 - [x] Unit tests for core systems (mining, combat, inventory, save)
-- [ ] Integration tests (full game loop)
+- [x] Integration tests (full game loop)
 - [ ] Performance profiling (60 FPS on tablet)
 - [ ] Build verification (npm run build → clean dist)
 

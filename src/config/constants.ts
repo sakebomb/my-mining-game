@@ -16,8 +16,9 @@ export const PLAYER_START_HEALTH = 100;
 export const GRAVITY = -20;
 
 /** Render distances */
-export const RENDER_DISTANCE = 6; // chunks
-export const LOD_DISTANCE = 4; // chunks for full detail
+export const RENDER_DISTANCE = 4; // chunks
+export const LOD_DISTANCE = 3; // chunks for full detail (shadows enabled)
+export const SHADOW_DISTANCE = 3; // chunks — only nearby chunks cast/receive shadows
 
 /** Mining */
 export const MINE_REACH = 3; // meters
