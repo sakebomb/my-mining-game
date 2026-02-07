@@ -15,6 +15,7 @@ import { TeleportSystem } from './world/TeleportSystem';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
 import { TouchControls } from './input/TouchControls';
+import { SaveSystem, SaveData } from './save/SaveSystem';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -480,13 +481,56 @@ function animate(): void {
   renderer.render(scene, camera);
 }
 
-// Initial world generation
-world.update(player.position.x, player.position.y, player.position.z);
+// --- Save System ---
+const saveSystem = new SaveSystem();
 
-// Place teleport pads after world is generated
-teleportSystem.placePads();
-// Re-update world to rebuild chunk meshes with teleport blocks
-world.update(player.position.x, player.position.y, player.position.z);
+saveSystem.onCollectSaveData = (): SaveData => ({
+  inventory: inventory.serialize(),
+  player: {
+    x: player.position.x,
+    y: player.position.y,
+    z: player.position.z,
+  },
+  worldSeed: world.seed,
+  timestamp: Date.now(),
+});
 
-animate();
-console.log('Dig Deep to Victory — engine initialized');
+saveSystem.onLoadSaveData = (data: SaveData) => {
+  inventory.deserialize(data.inventory);
+  player.position.set(data.player.x, data.player.y, data.player.z);
+  player.velocity.set(0, 0, 0);
+  player.onGround = false;
+};
+
+// R key to reset save (with confirmation)
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyR' && e.shiftKey && !tradingUI.isOpen) {
+    if (confirm('Reset all progress? This cannot be undone!')) {
+      saveSystem.reset().then(() => {
+        window.location.reload();
+      });
+    }
+  }
+});
+
+// --- Startup ---
+(async () => {
+  await saveSystem.init();
+  const savedData = await saveSystem.load();
+
+  if (savedData) {
+    console.log('Save loaded from', new Date(savedData.timestamp).toLocaleString());
+    showPickupText('Game loaded!');
+  }
+
+  // Initial world generation
+  world.update(player.position.x, player.position.y, player.position.z);
+
+  // Place teleport pads after world is generated
+  teleportSystem.placePads();
+  // Re-update world to rebuild chunk meshes with teleport blocks
+  world.update(player.position.x, player.position.y, player.position.z);
+
+  animate();
+  console.log('Dig Deep to Victory — engine initialized');
+})();
