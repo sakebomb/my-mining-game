@@ -6,6 +6,8 @@ import { BLOCK_DEFS } from './config/blocks';
 import { ITEMS } from './config/items';
 import { TIER_COLORS } from './config/types';
 import { Inventory, GearSlot } from './player/Inventory';
+import { NPC } from './npc/NPC';
+import { TradingUI } from './ui/TradingUI';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -76,6 +78,54 @@ mining.onBlockMined = (blockType, _x, _y, _z) => {
     }
   }
 };
+
+// --- NPCs ---
+const buyerNPC = new NPC({
+  name: 'Grumble the Buyer',
+  position: new THREE.Vector3(5, 0.0, 5),
+  color: 0x44aa44,
+  interactRadius: 3,
+}, scene);
+
+const sellerNPC = new NPC({
+  name: 'Sparkle the Seller',
+  position: new THREE.Vector3(-5, 0.0, 5),
+  color: 0x4488cc,
+  interactRadius: 3,
+}, scene);
+
+const npcs = [buyerNPC, sellerNPC];
+
+// --- Trading UI ---
+const tradingUI = new TradingUI(inventory);
+tradingUI.onToggle = (isOpen) => {
+  if (isOpen) {
+    document.exitPointerLock();
+  }
+};
+
+// NPC interaction prompt
+const npcPrompt = document.createElement('div');
+npcPrompt.style.cssText = `
+  position: fixed; bottom: 40%; left: 50%; transform: translateX(-50%);
+  color: #88eeff; font-family: monospace; font-size: 15px; font-weight: bold;
+  pointer-events: none; z-index: 100; text-shadow: 1px 1px 3px black;
+  display: none;
+`;
+document.body.appendChild(npcPrompt);
+
+let nearbyNPC: NPC | null = null;
+
+// E key to interact with NPCs
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyE' && nearbyNPC && !tradingUI.isOpen) {
+    if (nearbyNPC === buyerNPC) {
+      tradingUI.open(buyerNPC.name, 'sell');
+    } else if (nearbyNPC === sellerNPC) {
+      tradingUI.open(sellerNPC.name, 'buy');
+    }
+  }
+});
 
 // --- HUD: info overlay (top-left: depth + position) ---
 const hud = document.createElement('div');
@@ -194,7 +244,8 @@ instructions.innerHTML = `
   <p>Click to start</p>
   <p style="font-size: 14px; margin-top: 10px;">
     WASD — Move &nbsp;|&nbsp; Mouse — Look<br>
-    Space — Jump &nbsp;|&nbsp; Hold Left Click — Mine
+    Space — Jump &nbsp;|&nbsp; Hold Left Click — Mine<br>
+    E — Talk to NPC
   </p>
 `;
 document.body.appendChild(instructions);
@@ -239,6 +290,21 @@ function animate(): void {
   );
   sun.target.position.copy(player.position);
   sun.target.updateMatrixWorld();
+
+  // NPC proximity check
+  nearbyNPC = null;
+  for (const npc of npcs) {
+    if (npc.isInRange(player.position)) {
+      nearbyNPC = npc;
+      break;
+    }
+  }
+  if (nearbyNPC && !tradingUI.isOpen) {
+    npcPrompt.style.display = 'block';
+    npcPrompt.textContent = `[E] Talk to ${nearbyNPC.name}`;
+  } else {
+    npcPrompt.style.display = 'none';
+  }
 
   // HUD update
   const depth = Math.max(0, -player.position.y).toFixed(1);

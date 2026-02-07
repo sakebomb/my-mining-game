@@ -12,8 +12,8 @@
 
 ## Phase 2: Economy & NPCs
 - [x] Item/gear tier system (rainbow tiers, stats)
-- [ ] Surface NPCs (buyer + seller) with trading UI
-- [ ] Pickaxe/weapon/armor/backpack purchasing
+- [x] Surface NPCs (buyer + seller) with trading UI
+- [x] Pickaxe/weapon/armor/backpack purchasing
 - [ ] Enhancement system (bones/brains/cloth, success rates)
 
 ## Phase 3: Combat & Enemies
