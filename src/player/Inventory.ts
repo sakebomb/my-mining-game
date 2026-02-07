@@ -1,5 +1,6 @@
 import { ITEMS } from '../config/items';
 import { GearDef } from '../config/types';
+import { MAX_ENHANCEMENT_LEVEL, ENHANCEMENT_MATERIALS, ENHANCEMENT_STAT_BOOST } from '../config/constants';
 
 export type GearSlot = 'pickaxe' | 'weapon' | 'armor' | 'backpack';
 
@@ -18,6 +19,9 @@ export class Inventory {
 
   /** Equipped gear per slot */
   private equipped: Map<GearSlot, string> = new Map();
+
+  /** Enhancement levels per gear slot (0-5) */
+  private enhancements: Map<GearSlot, number> = new Map();
 
   /** Player money */
   money = 0;
@@ -117,12 +121,13 @@ export class Inventory {
     return slots;
   }
 
-  /** Equip a gear item (must be in inventory or be starter gear) */
+  /** Equip a gear item. Resets enhancement level for that slot. */
   equip(itemId: string): boolean {
     const def = ITEMS[itemId];
     if (!def || def.category !== 'gear') return false;
     const gearDef = def as GearDef;
     this.equipped.set(gearDef.gearSlot, itemId);
+    this.enhancements.set(gearDef.gearSlot, 0); // reset on new gear
     this.onChange?.();
     return true;
   }
@@ -147,16 +152,56 @@ export class Inventory {
     return pick?.stats?.mineTier ?? 0;
   }
 
-  /** Get equipped pickaxe mine speed multiplier */
+  /** Get equipped pickaxe mine speed multiplier (with enhancement bonus) */
   getMineSpeed(): number {
     const pick = this.getEquippedDef('pickaxe');
-    return pick?.stats?.mineSpeed ?? 1;
+    const base = pick?.stats?.mineSpeed ?? 1;
+    return base * (1 + this.getEnhancementLevel('pickaxe') * ENHANCEMENT_STAT_BOOST);
+  }
+
+  /** Get enhancement level for a gear slot */
+  getEnhancementLevel(slot: GearSlot): number {
+    return this.enhancements.get(slot) ?? 0;
+  }
+
+  /**
+   * Attempt to enhance equipped gear in a slot using a material.
+   * Consumes 1 material. Returns true on success, false on failure.
+   * Enhancement level increases on success.
+   */
+  tryEnhance(slot: GearSlot, materialId: string): { success: boolean; consumed: boolean } {
+    // Must have gear equipped
+    if (!this.equipped.get(slot)) return { success: false, consumed: false };
+
+    // Must have material
+    if (!this.hasItem(materialId)) return { success: false, consumed: false };
+
+    // Must not be at max
+    const currentLevel = this.getEnhancementLevel(slot);
+    if (currentLevel >= MAX_ENHANCEMENT_LEVEL) return { success: false, consumed: false };
+
+    // Get success rate
+    const rate = ENHANCEMENT_MATERIALS[materialId];
+    if (rate === undefined) return { success: false, consumed: false };
+
+    // Consume the material
+    this.removeItem(materialId, 1);
+
+    // Roll for success
+    const success = Math.random() < rate;
+    if (success) {
+      this.enhancements.set(slot, currentLevel + 1);
+    }
+
+    this.onChange?.();
+    return { success, consumed: true };
   }
 
   /** Serialize inventory state for saving */
   serialize(): {
     items: Record<string, number>;
     equipped: Record<string, string>;
+    enhancements: Record<string, number>;
     money: number;
   } {
     const items: Record<string, number> = {};
@@ -167,13 +212,18 @@ export class Inventory {
     for (const [slot, id] of this.equipped) {
       equipped[slot] = id;
     }
-    return { items, equipped, money: this.money };
+    const enhancements: Record<string, number> = {};
+    for (const [slot, level] of this.enhancements) {
+      if (level > 0) enhancements[slot] = level;
+    }
+    return { items, equipped, enhancements, money: this.money };
   }
 
   /** Restore inventory state from saved data */
   deserialize(data: {
     items?: Record<string, number>;
     equipped?: Record<string, string>;
+    enhancements?: Record<string, number>;
     money?: number;
   }): void {
     this.items.clear();
@@ -192,9 +242,16 @@ export class Inventory {
         }
       }
     } else {
-      // Restore defaults
       this.equipped.set('pickaxe', 'pick_stone');
       this.equipped.set('backpack', 'backpack_t1');
+    }
+    this.enhancements.clear();
+    if (data.enhancements) {
+      for (const [slot, level] of Object.entries(data.enhancements)) {
+        if (level > 0 && level <= MAX_ENHANCEMENT_LEVEL) {
+          this.enhancements.set(slot as GearSlot, level);
+        }
+      }
     }
     this.money = data.money ?? 0;
     this.onChange?.();

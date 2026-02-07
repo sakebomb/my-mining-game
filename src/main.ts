@@ -171,12 +171,14 @@ sidePanel.style.cssText = `
 `;
 document.body.appendChild(sidePanel);
 
-/** Format a gear slot line with tier color */
+/** Format a gear slot line with tier color and enhancement stars */
 function gearLine(label: string, slot: GearSlot): string {
   const def = inventory.getEquippedDef(slot);
   if (!def) return `<span style="color:#666">${label}: —</span>`;
   const color = def.tier !== undefined ? '#' + TIER_COLORS[def.tier].toString(16).padStart(6, '0') : '#fff';
-  return `<span style="color:${color}">${label}: ${def.name}</span>`;
+  const level = inventory.getEnhancementLevel(slot);
+  const stars = level > 0 ? ` <span style="color:#ffcc00">${'★'.repeat(level)}</span>` : '';
+  return `<span style="color:${color}">${label}: ${def.name}${stars}</span>`;
 }
 
 function updateSidePanel(): void {

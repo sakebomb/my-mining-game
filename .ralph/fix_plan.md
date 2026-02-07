@@ -14,7 +14,7 @@
 - [x] Item/gear tier system (rainbow tiers, stats)
 - [x] Surface NPCs (buyer + seller) with trading UI
 - [x] Pickaxe/weapon/armor/backpack purchasing
-- [ ] Enhancement system (bones/brains/cloth, success rates)
+- [x] Enhancement system (bones/brains/cloth, success rates)
 
 ## Phase 3: Combat & Enemies
 - [ ] Enemy spawning system (underground, config-driven)

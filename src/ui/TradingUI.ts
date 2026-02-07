@@ -1,8 +1,9 @@
-import { Inventory } from '../player/Inventory';
+import { Inventory, GearSlot } from '../player/Inventory';
 import { ITEMS } from '../config/items';
 import { GearDef } from '../config/types';
+import { ENHANCEMENT_MATERIALS, MAX_ENHANCEMENT_LEVEL } from '../config/constants';
 
-export type TradeMode = 'buy' | 'sell';
+export type TradeMode = 'buy' | 'sell' | 'enhance';
 
 /**
  * HTML overlay for NPC trading. Shows a modal with buy/sell item lists.
@@ -71,8 +72,10 @@ export class TradingUI {
   private render(): void {
     if (this.mode === 'sell') {
       this.renderSellUI();
-    } else {
+    } else if (this.mode === 'buy') {
       this.renderBuyUI();
+    } else {
+      this.renderEnhanceUI();
     }
   }
 
@@ -102,8 +105,9 @@ export class TradingUI {
       }
     }
 
-    html += `<div style="margin-top:12px;display:flex;gap:8px">`;
-    html += `<button data-action="switchBuy" style="${this.btnStyle('#446')}">Buy Tab</button>`;
+    html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">`;
+    html += `<button data-action="switchBuy" style="${this.btnStyle('#446')}">Buy</button>`;
+    html += `<button data-action="switchEnhance" style="${this.btnStyle('#646')}">Enhance</button>`;
     html += `<button data-action="close" style="${this.btnStyle('#633')}">Close [Esc]</button>`;
     html += `</div>`;
 
@@ -152,14 +156,85 @@ export class TradingUI {
       }
     }
 
-    html += `<div style="margin-top:12px;display:flex;gap:8px">`;
-    html += `<button data-action="switchSell" style="${this.btnStyle('#446')}">Sell Tab</button>`;
+    html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">`;
+    html += `<button data-action="switchSell" style="${this.btnStyle('#446')}">Sell</button>`;
+    html += `<button data-action="switchEnhance" style="${this.btnStyle('#646')}">Enhance</button>`;
     html += `<button data-action="close" style="${this.btnStyle('#633')}">Close [Esc]</button>`;
     html += `</div>`;
 
     this.content.innerHTML = html;
     this.attachListeners();
   }
+
+  private renderEnhanceUI(): void {
+    let html = `<h3 style="margin:0 0 8px;color:#cc88ff">${this.npcName} — Enhance Gear</h3>`;
+    html += `<div style="margin-bottom:4px;color:#aaa;font-size:11px">Use drops to enhance equipped gear (max +${MAX_ENHANCEMENT_LEVEL})</div>`;
+
+    // Show available materials
+    const materialNames: Record<string, string> = { bone: 'Bone', brain: 'Brain', cloth: 'Cloth' };
+    html += `<div style="margin-bottom:8px;font-size:12px;color:#aaa">`;
+    for (const matId of Object.keys(ENHANCEMENT_MATERIALS)) {
+      const qty = this.inventory.getQuantity(matId);
+      const rate = Math.round(ENHANCEMENT_MATERIALS[matId] * 100);
+      html += `${materialNames[matId] ?? matId}: ${qty} (${rate}% success) &nbsp;`;
+    }
+    html += `</div>`;
+
+    // Show each gear slot
+    const gearSlots: { slot: GearSlot; label: string }[] = [
+      { slot: 'pickaxe', label: 'Pickaxe' },
+      { slot: 'weapon', label: 'Weapon' },
+      { slot: 'armor', label: 'Armor' },
+      { slot: 'backpack', label: 'Backpack' },
+    ];
+
+    for (const { slot, label } of gearSlots) {
+      const def = this.inventory.getEquippedDef(slot);
+      if (!def) {
+        html += `<div style="padding:4px 0;color:#666">${label}: — (none equipped)</div>`;
+        continue;
+      }
+      const level = this.inventory.getEnhancementLevel(slot);
+      const stars = level > 0 ? ' ' + '★'.repeat(level) : '';
+      const maxed = level >= MAX_ENHANCEMENT_LEVEL;
+
+      html += `<div style="padding:6px 0;border-bottom:1px solid #333">`;
+      html += `<div style="font-size:13px">${label}: <b>${def.name}</b>`;
+      html += `<span style="color:#ffcc00">${stars}</span>`;
+      if (maxed) html += ` <span style="color:#4a4;font-size:11px">[MAX]</span>`;
+      html += `</div>`;
+
+      if (!maxed) {
+        html += `<div style="margin-top:3px;display:flex;gap:4px">`;
+        for (const matId of Object.keys(ENHANCEMENT_MATERIALS)) {
+          const hasItem = this.inventory.hasItem(matId);
+          html += `<button data-action="enhance" data-slot="${slot}" data-mat="${matId}" style="${this.btnStyle(hasItem ? '#646' : '#333')}" ${hasItem ? '' : 'disabled'}>`;
+          html += `Use ${materialNames[matId] ?? matId}`;
+          html += `</button>`;
+        }
+        html += `</div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Last enhance result
+    if (this.lastEnhanceResult) {
+      const color = this.lastEnhanceResult.success ? '#44ff44' : '#ff4444';
+      const text = this.lastEnhanceResult.success ? 'Enhancement succeeded!' : 'Enhancement failed...';
+      html += `<div style="margin-top:8px;color:${color};font-weight:bold">${text}</div>`;
+    }
+
+    html += `<div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">`;
+    html += `<button data-action="switchSell" style="${this.btnStyle('#446')}">Sell</button>`;
+    html += `<button data-action="switchBuy" style="${this.btnStyle('#446')}">Buy</button>`;
+    html += `<button data-action="close" style="${this.btnStyle('#633')}">Close [Esc]</button>`;
+    html += `</div>`;
+
+    this.content.innerHTML = html;
+    this.attachListeners();
+  }
+
+  private lastEnhanceResult: { success: boolean } | null = null;
 
   private attachListeners(): void {
     this.content.querySelectorAll('button').forEach((btn) => {
@@ -178,12 +253,25 @@ export class TradingUI {
           case 'buy':
             if (itemId) this.buyItem(itemId);
             break;
+          case 'enhance': {
+            const slot = el.dataset.slot as GearSlot | undefined;
+            const mat = el.dataset.mat;
+            if (slot && mat) this.enhanceItem(slot, mat);
+            break;
+          }
           case 'switchBuy':
             this.mode = 'buy';
+            this.lastEnhanceResult = null;
             this.render();
             break;
           case 'switchSell':
             this.mode = 'sell';
+            this.lastEnhanceResult = null;
+            this.render();
+            break;
+          case 'switchEnhance':
+            this.mode = 'enhance';
+            this.lastEnhanceResult = null;
             this.render();
             break;
           case 'close':
@@ -219,6 +307,14 @@ export class TradingUI {
       this.inventory.addItem(itemId);
     }
     this.inventory.onChange?.();
+    this.render();
+  }
+
+  private enhanceItem(slot: GearSlot, materialId: string): void {
+    const result = this.inventory.tryEnhance(slot, materialId);
+    if (result.consumed) {
+      this.lastEnhanceResult = { success: result.success };
+    }
     this.render();
   }
 
