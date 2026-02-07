@@ -33,7 +33,7 @@
 - [x] Touch controls (nipplejs joystick, swipe look, tap-hold mine)
 - [x] Save/load system (IndexedDB, auto-save 30s + blur)
 - [x] PWA setup (manifest, service worker, installable)
-- [ ] Victory Scepter endgame (purchase → win screen + confetti)
+- [x] Victory Scepter endgame (purchase → win screen + confetti)
 - [ ] Visual polish (bloom, glow shaders, tier coloring, particles)
 
 ## Phase 6: Testing & QA

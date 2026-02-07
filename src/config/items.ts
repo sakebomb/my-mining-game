@@ -81,7 +81,7 @@ export const ITEMS: Record<string, ItemDef | GearDef> = {
   backpack_t7: { id: 'backpack_t7', name: 'Amethyst Trunk', category: 'gear', gearSlot: 'backpack', tier: Tier.Indigo, stackable: false, maxStack: 1, sellPrice: 800, buyPrice: 1600, stats: { slots: 90 } },
   backpack_t8: { id: 'backpack_t8', name: 'Diamond Vault', category: 'gear', gearSlot: 'backpack', tier: Tier.White, stackable: false, maxStack: 1, sellPrice: 2000, buyPrice: 4000, stats: { slots: 120 } },
 
-  // Victory item
+  // Victory item (buyPrice computed below)
   victory_scepter: {
     id: 'victory_scepter',
     name: 'Victory Scepter',
@@ -89,6 +89,13 @@ export const ITEMS: Record<string, ItemDef | GearDef> = {
     stackable: false,
     maxStack: 1,
     sellPrice: 0,
-    buyPrice: 0, // computed at runtime: sum of all other gear + 10 diamonds
+    buyPrice: 0,
   },
 };
+
+// Compute Victory Scepter price: sum of all gear buyPrices + 10 * diamond sell price
+const gearTotal = Object.values(ITEMS)
+  .filter((item) => item.category === 'gear' && item.buyPrice > 0)
+  .reduce((sum, item) => sum + item.buyPrice, 0);
+const diamondValue = ITEMS.ore_diamond?.sellPrice ?? 1000;
+ITEMS.victory_scepter.buyPrice = gearTotal + 10 * diamondValue;

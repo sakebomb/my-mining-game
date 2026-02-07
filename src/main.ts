@@ -16,6 +16,7 @@ import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
 import { TouchControls } from './input/TouchControls';
 import { SaveSystem, SaveData } from './save/SaveSystem';
+import { WinScreen } from './ui/WinScreen';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -119,6 +120,21 @@ tradingUI.onToggle = (isOpen) => {
 };
 tradingUI.onTrade = (type) => {
   audio.play(type);
+};
+
+// --- Win Screen ---
+const winScreen = new WinScreen();
+tradingUI.onSpecialPurchase = (itemId) => {
+  if (itemId === 'victory_scepter') {
+    audio.stopBGM();
+    saveSystem.stopAutoSave();
+    winScreen.show();
+  }
+};
+winScreen.onReset = () => {
+  saveSystem.reset().then(() => {
+    window.location.reload();
+  });
 };
 
 // NPC interaction prompt

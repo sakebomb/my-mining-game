@@ -23,6 +23,9 @@ export class TradingUI {
   /** Called when an item is bought, sold, or enhanced */
   onTrade: ((type: 'buy' | 'sell' | 'enhance_success' | 'enhance_fail') => void) | null = null;
 
+  /** Called when a special item is purchased (e.g., Victory Scepter) */
+  onSpecialPurchase: ((itemId: string) => void) | null = null;
+
   constructor(inventory: Inventory) {
     this.inventory = inventory;
 
@@ -121,7 +124,7 @@ export class TradingUI {
   private renderBuyUI(): void {
     // Collect all buyable items (gear + consumables with buyPrice > 0)
     const buyable = Object.values(ITEMS).filter(
-      (def) => def.buyPrice > 0 && (def.category === 'gear' || def.category === 'consumable'),
+      (def) => def.buyPrice > 0 && (def.category === 'gear' || def.category === 'consumable' || def.category === 'special'),
     );
 
     let html = `<h3 style="margin:0 0 8px;color:#44ddff">${this.npcName} — Buy Items</h3>`;
@@ -155,6 +158,18 @@ export class TradingUI {
         html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #222">`;
         html += `<span style="font-size:12px">${c.name}</span>`;
         html += `<button data-action="buy" data-item="${c.id}" style="${this.btnStyle(canAfford ? '#464' : '#333')}" ${canAfford ? '' : 'disabled'}>$${c.buyPrice}</button>`;
+        html += `</div>`;
+      }
+    }
+
+    const specials = buyable.filter((d) => d.category === 'special');
+    if (specials.length > 0) {
+      html += `<div style="margin-top:8px;color:#ffdd44;font-size:11px;text-transform:uppercase;font-weight:bold">Special</div>`;
+      for (const s of specials) {
+        const canAfford = this.inventory.money >= s.buyPrice;
+        html += `<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid #555;background:rgba(255,221,68,0.1)">`;
+        html += `<span style="font-size:12px;color:#ffdd44;font-weight:bold">${s.name}</span>`;
+        html += `<button data-action="buy" data-item="${s.id}" style="${this.btnStyle(canAfford ? '#664' : '#333')}" ${canAfford ? '' : 'disabled'}>$${s.buyPrice.toLocaleString()}</button>`;
         html += `</div>`;
       }
     }
@@ -304,6 +319,14 @@ export class TradingUI {
       // Gear: just equip directly (don't take inventory slot)
       this.inventory.money -= def.buyPrice;
       this.inventory.equip(itemId);
+    } else if (def.category === 'special') {
+      // Special items: deduct money, fire special callback
+      this.inventory.money -= def.buyPrice;
+      this.inventory.onChange?.();
+      this.onTrade?.('buy');
+      this.close();
+      this.onSpecialPurchase?.(itemId);
+      return;
     } else {
       // Consumable/stackable: add to inventory
       if (!this.inventory.canAdd(itemId)) return;

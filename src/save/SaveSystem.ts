@@ -104,6 +104,18 @@ export class SaveSystem {
     }
   }
 
+  /** Stop auto-save timer and blur handler */
+  stopAutoSave(): void {
+    if (this.autoSaveTimer) {
+      clearInterval(this.autoSaveTimer);
+      this.autoSaveTimer = null;
+    }
+    if (this.blurHandler) {
+      window.removeEventListener('blur', this.blurHandler);
+      this.blurHandler = null;
+    }
+  }
+
   /** Delete the save (reset) */
   async reset(): Promise<void> {
     if (!this.db) return;
@@ -115,14 +127,7 @@ export class SaveSystem {
   }
 
   dispose(): void {
-    if (this.autoSaveTimer) {
-      clearInterval(this.autoSaveTimer);
-      this.autoSaveTimer = null;
-    }
-    if (this.blurHandler) {
-      window.removeEventListener('blur', this.blurHandler);
-      this.blurHandler = null;
-    }
+    this.stopAutoSave();
     this.db?.close();
     this.db = null;
   }
