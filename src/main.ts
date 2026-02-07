@@ -4,7 +4,8 @@ import { PlayerController } from './player/PlayerController';
 import { MiningSystem } from './player/MiningSystem';
 import { BLOCK_DEFS } from './config/blocks';
 import { ITEMS } from './config/items';
-import { Inventory } from './player/Inventory';
+import { TIER_COLORS } from './config/types';
+import { Inventory, GearSlot } from './player/Inventory';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -72,7 +73,7 @@ mining.onBlockMined = (blockType, _x, _y, _z) => {
   }
 };
 
-// --- HUD: simple info overlay ---
+// --- HUD: info overlay (top-left: depth + position) ---
 const hud = document.createElement('div');
 hud.style.cssText = `
   position: fixed; top: 10px; left: 10px; color: white; font-family: monospace;
@@ -80,41 +81,81 @@ hud.style.cssText = `
 `;
 document.body.appendChild(hud);
 
-// --- Inventory HUD (right side panel) ---
-const inventoryHud = document.createElement('div');
-inventoryHud.style.cssText = `
+// --- Health bar (bottom-left) ---
+const healthBar = document.createElement('div');
+healthBar.style.cssText = `
+  position: fixed; bottom: 20px; left: 20px; pointer-events: none; z-index: 100;
+  font-family: monospace; font-size: 12px; color: white; text-shadow: 1px 1px 2px black;
+`;
+healthBar.innerHTML = `
+  <div style="margin-bottom:2px">HP</div>
+  <div style="width:180px;height:14px;background:rgba(0,0,0,0.5);border-radius:3px;overflow:hidden">
+    <div id="hp-fill" style="width:100%;height:100%;background:#44cc44;transition:width 0.3s"></div>
+  </div>
+  <div id="hp-text" style="font-size:11px;margin-top:1px">100/100</div>
+`;
+document.body.appendChild(healthBar);
+
+const hpFill = document.getElementById('hp-fill')!;
+const hpText = document.getElementById('hp-text')!;
+
+function updateHealthBar(): void {
+  const pct = Math.max(0, Math.min(100, (player.health / player.maxHealth) * 100));
+  hpFill.style.width = `${pct}%`;
+  // Color shifts: green > 50%, yellow > 25%, red <= 25%
+  hpFill.style.background = pct > 50 ? '#44cc44' : pct > 25 ? '#ccaa22' : '#cc3333';
+  hpText.textContent = `${Math.ceil(player.health)}/${player.maxHealth}`;
+}
+
+// --- Right-side HUD panel (money, equipped gear, inventory) ---
+const sidePanel = document.createElement('div');
+sidePanel.style.cssText = `
   position: fixed; top: 10px; right: 10px; color: white; font-family: monospace;
   font-size: 13px; pointer-events: none; z-index: 100; text-shadow: 1px 1px 2px black;
-  background: rgba(0,0,0,0.4); padding: 10px 14px; border-radius: 6px;
-  min-width: 160px; max-height: 60vh; overflow-y: auto;
+  background: rgba(0,0,0,0.45); padding: 10px 14px; border-radius: 6px;
+  min-width: 170px; max-height: 70vh; overflow-y: auto;
 `;
-document.body.appendChild(inventoryHud);
+document.body.appendChild(sidePanel);
 
-function updateInventoryHud(): void {
-  const pickDef = inventory.getEquippedDef('pickaxe');
+/** Format a gear slot line with tier color */
+function gearLine(label: string, slot: GearSlot): string {
+  const def = inventory.getEquippedDef(slot);
+  if (!def) return `<span style="color:#666">${label}: —</span>`;
+  const color = def.tier !== undefined ? '#' + TIER_COLORS[def.tier].toString(16).padStart(6, '0') : '#fff';
+  return `<span style="color:${color}">${label}: ${def.name}</span>`;
+}
+
+function updateSidePanel(): void {
   const items = inventory.getAllItems();
 
-  let html = `<b>$${inventory.money}</b><br>`;
-  html += `<span style="color:#ffcc00">${pickDef?.name ?? 'No Pickaxe'}</span><br>`;
-  html += `<span style="font-size:11px;color:#aaa">${inventory.usedSlots}/${inventory.maxSlots} slots</span>`;
+  let html = `<b style="color:#ffdd44">$${inventory.money}</b><br>`;
   html += `<hr style="border-color:#555;margin:4px 0">`;
 
+  // Equipped gear
+  html += gearLine('Pick', 'pickaxe') + '<br>';
+  html += gearLine('Weapon', 'weapon') + '<br>';
+  html += gearLine('Armor', 'armor') + '<br>';
+  html += gearLine('Bag', 'backpack') + '<br>';
+
+  html += `<hr style="border-color:#555;margin:4px 0">`;
+  html += `<span style="font-size:11px;color:#aaa">Bag: ${inventory.usedSlots}/${inventory.maxSlots}</span><br>`;
+
   if (items.length === 0) {
-    html += `<span style="color:#888">Empty</span>`;
+    html += `<span style="color:#666;font-size:12px">Empty</span>`;
   } else {
     for (const slot of items) {
       const def = ITEMS[slot.itemId];
       const name = def?.name ?? slot.itemId;
-      html += `${name} x${slot.quantity}<br>`;
+      html += `<span style="font-size:12px">${name} x${slot.quantity}</span><br>`;
     }
   }
 
-  inventoryHud.innerHTML = html;
+  sidePanel.innerHTML = html;
 }
 
-// Update HUD when inventory changes
-inventory.onChange = updateInventoryHud;
-updateInventoryHud();
+// Update side panel when inventory changes
+inventory.onChange = updateSidePanel;
+updateSidePanel();
 
 // --- Pickup text (floating feedback) ---
 const pickupTextEl = document.createElement('div');
@@ -199,6 +240,7 @@ function animate(): void {
   const depth = Math.max(0, -player.position.y).toFixed(1);
   const pos = player.position;
   hud.textContent = `Depth: ${depth}m | Pos: ${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
+  updateHealthBar();
 
   renderer.render(scene, camera);
 }

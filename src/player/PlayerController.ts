@@ -5,6 +5,7 @@ import {
   PLAYER_SPEED,
   PLAYER_JUMP_FORCE,
   PLAYER_RADIUS,
+  PLAYER_START_HEALTH,
   GRAVITY,
   BLOCK_SIZE,
 } from '../config/constants';
@@ -24,6 +25,10 @@ export class PlayerController {
   position = new THREE.Vector3(0, 5, 0);
   velocity = new THREE.Vector3(0, 0, 0);
   onGround = false;
+
+  // Health
+  health = PLAYER_START_HEALTH;
+  maxHealth = PLAYER_START_HEALTH;
 
   // Mouse look
   private yaw = 0;

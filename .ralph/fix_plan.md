@@ -8,7 +8,7 @@
 - [x] First-person camera + PC controls (WASD, mouse look, jump)
 - [x] Block mining mechanics (raycasting, block removal, drops)
 - [x] Basic inventory system (pickup items, backpack capacity)
-- [ ] Player HUD (health, money, equipped gear, inventory panel)
+- [x] Player HUD (health, money, equipped gear, inventory panel)
 
 ## Phase 2: Economy & NPCs
 - [ ] Item/gear tier system (rainbow tiers, stats)
