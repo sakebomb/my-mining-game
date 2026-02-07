@@ -12,6 +12,7 @@ import { EnemyManager } from './npc/EnemyManager';
 import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
 import { TeleportSystem } from './world/TeleportSystem';
+import { PhysicsWorld } from './physics/PhysicsWorld';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -153,6 +154,9 @@ enemyManager.onEnemyDeath = (enemy) => {
     }
   }
 };
+
+// --- Physics ---
+const physics = new PhysicsWorld();
 
 // --- Combat ---
 const combat = new CombatSystem(player, inventory);
@@ -374,6 +378,9 @@ function animate(): void {
     // Update world chunks around new position
     world.update(player.position.x, player.position.y, player.position.z);
   }
+
+  // Update physics world
+  physics.update(dt);
 
   // Update enemies and combat
   if (!tradingUI.isOpen) {

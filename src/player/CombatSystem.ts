@@ -78,6 +78,13 @@ export class CombatSystem {
       const dmg = this.getWeaponDamage();
       bestEnemy.takeDamage(dmg);
       this.attackTimer = ATTACK_INTERVAL;
+
+      // Apply knockback in the look direction
+      const knockDir = this.player.getLookDirection().clone();
+      knockDir.y = 0;
+      knockDir.normalize();
+      bestEnemy.applyKnockback(knockDir, 5);
+
       return bestEnemy;
     }
 

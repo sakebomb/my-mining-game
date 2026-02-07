@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { EnemyDef } from '../config/types';
-import { BLOCK_SIZE } from '../config/constants';
+import { BLOCK_SIZE, GRAVITY } from '../config/constants';
 import { WorldManager } from '../world/WorldManager';
 
 const ENEMY_COLORS: Record<string, number> = {
@@ -22,6 +22,7 @@ export class Enemy {
   readonly position: THREE.Vector3;
   velocity = new THREE.Vector3();
   private attackCooldown = 0;
+  private onGround = false;
 
   /** Set to true when dead (waiting for cleanup) */
   isDead = false;
@@ -125,12 +126,33 @@ export class Enemy {
       }
     }
 
-    // Simple gravity: snap to ground
-    const feetBlock = Math.floor(this.position.y / BLOCK_SIZE) - 1;
+    // Gravity with proper acceleration
+    this.velocity.y += GRAVITY * dt;
+
+    // Apply vertical velocity
+    const newY = this.position.y + this.velocity.y * dt;
     const feetX = Math.floor(this.position.x / BLOCK_SIZE);
     const feetZ = Math.floor(this.position.z / BLOCK_SIZE);
-    if (!world.isSolid(feetX, feetBlock, feetZ)) {
-      this.position.y -= 4 * dt; // fall
+    const feetBlock = Math.floor(newY / BLOCK_SIZE) - 1;
+
+    if (this.velocity.y <= 0 && world.isSolid(feetX, feetBlock, feetZ)) {
+      // Landed on ground
+      this.velocity.y = 0;
+      this.onGround = true;
+      // Snap to top of block
+      this.position.y = (feetBlock + 1) * BLOCK_SIZE;
+    } else {
+      this.position.y = newY;
+      this.onGround = false;
+    }
+
+    // Apply knockback (horizontal velocity decays)
+    if (Math.abs(this.velocity.x) > 0.01 || Math.abs(this.velocity.z) > 0.01) {
+      this.position.x += this.velocity.x * dt;
+      this.position.z += this.velocity.z * dt;
+      // Friction/decay
+      this.velocity.x *= 0.9;
+      this.velocity.z *= 0.9;
     }
 
     this.mesh.position.copy(this.position);
@@ -144,6 +166,13 @@ export class Enemy {
       this.isDead = true;
       this.mesh.visible = false;
     }
+  }
+
+  /** Apply knockback impulse (direction should be normalized) */
+  applyKnockback(direction: THREE.Vector3, force: number): void {
+    this.velocity.x += direction.x * force;
+    this.velocity.y += Math.max(2, force * 0.3); // slight upward pop
+    this.velocity.z += direction.z * force;
   }
 
   /** Get drops on death (respects glowing 2x rate) */

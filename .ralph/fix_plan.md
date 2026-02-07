@@ -26,7 +26,7 @@
 - [x] Ladder placement and climbing
 - [x] Teleport system (bidirectional, levels 10/20/30/40)
 - [x] World boundaries (500m invisible walls)
-- [ ] Physics integration (cannon-es for player/enemy movement)
+- [x] Physics integration (cannon-es for player/enemy movement)
 
 ## Phase 5: Polish & UX
 - [ ] Audio system (Howler.js, spatial audio, chiptune BGM)
