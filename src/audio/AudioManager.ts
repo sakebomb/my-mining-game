@@ -34,8 +34,15 @@ export class AudioManager {
   private sfxVolume = 0.7;
   private bgmVolume = 0.3;
   private muted = false;
+  private initialized = false;
 
   constructor() {
+    // Sounds are lazily initialized on first play() to avoid blocking startup
+  }
+
+  private ensureInitialized(): void {
+    if (this.initialized) return;
+    this.initialized = true;
     this.initSounds();
   }
 
@@ -90,6 +97,7 @@ export class AudioManager {
   /** Play a sound effect */
   play(id: SoundId): void {
     if (this.muted) return;
+    this.ensureInitialized();
     const entry = this.sounds.get(id);
     if (entry) {
       entry.howl.play();
@@ -99,6 +107,7 @@ export class AudioManager {
   /** Play a sound at a 3D position (simplified spatial) */
   playAt(id: SoundId, x: number, y: number, z: number, listenerX: number, listenerY: number, listenerZ: number): void {
     if (this.muted) return;
+    this.ensureInitialized();
     const entry = this.sounds.get(id);
     if (!entry) return;
 
@@ -122,6 +131,7 @@ export class AudioManager {
   /** Start background music */
   startBGM(): void {
     if (this.muted) return;
+    this.ensureInitialized();
     const entry = this.sounds.get('bgm');
     if (entry && this.bgmId === undefined) {
       this.bgmId = entry.howl.play();

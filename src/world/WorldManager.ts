@@ -14,6 +14,10 @@ import { noise2d, fbm2d, noise3d, SeededRNG } from '../utils/noise';
 
 const chunkKey = (cx: number, cy: number, cz: number) => `${cx},${cy},${cz}`;
 
+const _frustum = new THREE.Frustum();
+const _projScreenMatrix = new THREE.Matrix4();
+const _sphere = new THREE.Sphere();
+
 export class WorldManager {
   readonly scene: THREE.Scene;
   readonly seed: number;
@@ -190,14 +194,21 @@ export class WorldManager {
     }
   }
 
-  /** Load/generate chunks around a world position */
-  update(playerX: number, playerY: number, playerZ: number): void {
+  /**
+   * Load/generate chunks around a world position.
+   * @param maxChunksPerFrame Max new chunks to generate per call (0 = unlimited).
+   * @returns true if all needed chunks are generated and meshed, false if still loading.
+   */
+  update(playerX: number, playerY: number, playerZ: number, maxChunksPerFrame = 0): boolean {
     const [bx, by, bz] = this.worldToBlock(playerX, playerY, playerZ);
     const [pcx, pcy, pcz] = this.blockToChunk(bx, by, bz);
 
     const needed = new Set<string>();
 
     // Generate chunks in cylindrical render distance
+    let generated = 0;
+    let pendingGeneration = false;
+
     for (let dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
       for (let dz = -RENDER_DISTANCE; dz <= RENDER_DISTANCE; dz++) {
         // Cylindrical culling: skip corners beyond circular radius
@@ -214,9 +225,14 @@ export class WorldManager {
           needed.add(key);
 
           if (!this.chunks.has(key)) {
+            if (maxChunksPerFrame > 0 && generated >= maxChunksPerFrame) {
+              pendingGeneration = true;
+              continue;
+            }
             const chunk = new Chunk(cx, cy, cz);
             this.generateChunk(chunk);
             this.chunks.set(key, chunk);
+            generated++;
           }
         }
       }
@@ -236,9 +252,15 @@ export class WorldManager {
     // Rebuild dirty chunk meshes (max 4 per update to avoid frame hitches)
     const getNeighborBlock = (wx: number, wy: number, wz: number) => this.getBlock(wx, wy, wz);
     let rebuilds = 0;
+    const maxRebuilds = maxChunksPerFrame > 0 ? maxChunksPerFrame : 4;
+    let pendingRebuilds = false;
 
     for (const [_key, chunk] of this.chunks) {
-      if (chunk.dirty && rebuilds < 4) {
+      if (chunk.dirty) {
+        if (rebuilds >= maxRebuilds) {
+          pendingRebuilds = true;
+          continue;
+        }
         if (chunk.mesh) {
           this.scene.remove(chunk.mesh);
         }
@@ -246,14 +268,58 @@ export class WorldManager {
         if (mesh) {
           // Only enable shadows on nearby chunks
           const dx = chunk.cx - pcx;
+          const dy = chunk.cy - pcy;
           const dz = chunk.cz - pcz;
           const distSq = dx * dx + dz * dz;
-          mesh.castShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE;
-          mesh.receiveShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE;
+          const nearVertically = Math.abs(dy) <= 1;
+          mesh.castShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE && nearVertically;
+          mesh.receiveShadow = distSq <= SHADOW_DISTANCE * SHADOW_DISTANCE && nearVertically;
           this.scene.add(mesh);
         }
         rebuilds++;
       }
+    }
+
+    return !pendingGeneration && !pendingRebuilds;
+  }
+
+  /** Count total needed chunks for progress tracking */
+  countNeededChunks(playerX: number, playerY: number, playerZ: number): number {
+    const [bx, by, bz] = this.worldToBlock(playerX, playerY, playerZ);
+    const [pcx, , pcz] = this.blockToChunk(bx, by, bz);
+    let count = 0;
+    for (let dx = -RENDER_DISTANCE; dx <= RENDER_DISTANCE; dx++) {
+      for (let dz = -RENDER_DISTANCE; dz <= RENDER_DISTANCE; dz++) {
+        if (dx * dx + dz * dz > RENDER_DISTANCE * RENDER_DISTANCE) continue;
+        const minCy = Math.floor(-MAX_DEPTH_BLOCKS / CHUNK_SIZE) - 1;
+        const maxCy = 2;
+        count += maxCy - minCy + 1;
+      }
+    }
+    return count;
+  }
+
+  /** Count currently loaded chunks */
+  get loadedChunkCount(): number {
+    return this.chunks.size;
+  }
+
+  /** Toggle chunk mesh visibility based on camera frustum */
+  updateFrustumCulling(camera: THREE.Camera): void {
+    _projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    _frustum.setFromProjectionMatrix(_projScreenMatrix);
+
+    const chunkWorldSize = CHUNK_SIZE * BLOCK_SIZE;
+    const radius = chunkWorldSize * 0.87; // sqrt(3)/2 ≈ 0.87
+    for (const [, chunk] of this.chunks) {
+      if (!chunk.mesh) continue;
+      _sphere.center.set(
+        (chunk.cx + 0.5) * chunkWorldSize,
+        (chunk.cy + 0.5) * chunkWorldSize,
+        (chunk.cz + 0.5) * chunkWorldSize,
+      );
+      _sphere.radius = radius;
+      chunk.mesh.visible = _frustum.intersectsSphere(_sphere);
     }
   }
 

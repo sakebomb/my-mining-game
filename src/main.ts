@@ -46,21 +46,26 @@ container.appendChild(renderer.domElement);
 // --- Device detection ---
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-// --- Post-processing (bloom) ---
-const composer = new EffectComposer(renderer);
-composer.addPass(new RenderPass(scene, camera));
+// --- Post-processing (bloom — skip on low-end devices) ---
+const isLowEnd = (navigator.hardwareConcurrency ?? 8) <= 4;
+let composer: EffectComposer | null = null;
 
-const bloomScale = isMobile ? 0.5 : 1.0;
-const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(
-    window.innerWidth * bloomScale,
-    window.innerHeight * bloomScale,
-  ),
-  0.4,  // strength — subtle glow
-  0.6,  // radius
-  0.85, // threshold — only bright emissive surfaces bloom
-);
-composer.addPass(bloomPass);
+if (!isLowEnd) {
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  const bloomScale = isMobile ? 0.5 : 1.0;
+  const bloomPass = new UnrealBloomPass(
+    new THREE.Vector2(
+      window.innerWidth * bloomScale,
+      window.innerHeight * bloomScale,
+    ),
+    0.4,  // strength — subtle glow
+    0.6,  // radius
+    0.85, // threshold — only bright emissive surfaces bloom
+  );
+  composer.addPass(bloomPass);
+}
 
 // --- Lighting ---
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -386,6 +391,24 @@ function showPickupText(text: string): void {
   }, 1200);
 }
 
+// --- Loading screen ---
+const loadingOverlay = document.createElement('div');
+loadingOverlay.style.cssText = `
+  position: fixed; inset: 0; background: #1a1a2e; z-index: 200;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-family: monospace; color: white; transition: opacity 0.5s;
+`;
+loadingOverlay.innerHTML = `
+  <h2 style="margin-bottom: 16px; color: #ffdd44;">Dig Deep to Victory</h2>
+  <div style="width: 260px; height: 18px; background: rgba(255,255,255,0.15); border-radius: 9px; overflow: hidden;">
+    <div id="load-bar" style="width: 0%; height: 100%; background: #44cc44; transition: width 0.1s;"></div>
+  </div>
+  <p id="load-text" style="margin-top: 8px; font-size: 13px; color: #aaa;">Loading world...</p>
+`;
+document.body.appendChild(loadingOverlay);
+const loadBar = document.getElementById('load-bar')!;
+const loadText = document.getElementById('load-text')!;
+
 // Instructions overlay
 const instructions = document.createElement('div');
 instructions.style.cssText = `
@@ -393,6 +416,7 @@ instructions.style.cssText = `
   color: white; font-family: sans-serif; font-size: 18px; text-align: center;
   pointer-events: none; z-index: 100; text-shadow: 1px 1px 4px black;
   background: rgba(0,0,0,0.5); padding: 20px 30px; border-radius: 8px;
+  display: none;
 `;
 instructions.innerHTML = `
   <h2>Dig Deep to Victory</h2>
@@ -408,8 +432,11 @@ instructions.innerHTML = `
 document.body.appendChild(instructions);
 
 let bgmStarted = false;
+let gameReady = false;
 document.addEventListener('pointerlockchange', () => {
-  instructions.style.display = document.pointerLockElement ? 'none' : 'block';
+  if (gameReady) {
+    instructions.style.display = document.pointerLockElement ? 'none' : 'block';
+  }
   // Start BGM on first pointer lock (requires user gesture)
   if (document.pointerLockElement && !bgmStarted) {
     bgmStarted = true;
@@ -422,7 +449,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
+  composer?.setSize(window.innerWidth, window.innerHeight);
 });
 
 // --- Game loop ---
@@ -451,6 +478,11 @@ function animate(): void {
   // Update world chunks around player (every 10 frames to reduce load)
   if (frameCount % 10 === 0) {
     world.update(player.position.x, player.position.y, player.position.z);
+  }
+
+  // Frustum culling (every 3 frames)
+  if (frameCount % 3 === 0) {
+    world.updateFrustumCulling(camera);
   }
 
   // Feed touch mining state
@@ -525,7 +557,11 @@ function animate(): void {
   hud.textContent = `Depth: ${depth}m | Pos: ${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
   updateHealthBar();
 
-  composer.render();
+  if (composer) {
+    composer.render();
+  } else {
+    renderer.render(scene, camera);
+  }
 }
 
 // --- Save System ---
@@ -567,19 +603,45 @@ window.addEventListener('keydown', (e) => {
 
   if (savedData) {
     console.log('Save loaded from', new Date(savedData.timestamp).toLocaleString());
-    showPickupText('Game loaded!');
   }
 
-  // Initial world generation
-  world.update(player.position.x, player.position.y, player.position.z);
+  // Progressive chunk loading — load a few chunks per frame to avoid blocking
+  const totalChunks = world.countNeededChunks(player.position.x, player.position.y, player.position.z);
+  let padsPlaced = false;
 
-  // Place teleport pads after world is generated
-  teleportSystem.placePads();
-  // Re-update world to rebuild chunk meshes with teleport blocks
-  world.update(player.position.x, player.position.y, player.position.z);
+  function loadStep(): void {
+    const done = world.update(player.position.x, player.position.y, player.position.z, 4);
+    const loaded = world.loadedChunkCount;
+    const pct = Math.min(100, Math.round((loaded / totalChunks) * 100));
+    loadBar.style.width = `${pct}%`;
+    loadText.textContent = `Loading world... ${pct}%`;
 
-  animate();
-  console.log('Dig Deep to Victory — engine initialized');
+    if (!done) {
+      requestAnimationFrame(loadStep);
+    } else {
+      if (!padsPlaced) {
+        // Place teleport pads once all chunks are generated, then rebuild affected meshes
+        padsPlaced = true;
+        teleportSystem.placePads();
+        world.update(player.position.x, player.position.y, player.position.z);
+      }
+
+      // Loading complete — hide overlay, show instructions, start game
+      loadingOverlay.style.opacity = '0';
+      setTimeout(() => loadingOverlay.remove(), 500);
+      gameReady = true;
+      instructions.style.display = 'block';
+
+      if (savedData) {
+        showPickupText('Game loaded!');
+      }
+
+      animate();
+      console.log('Dig Deep to Victory — engine initialized');
+    }
+  }
+
+  requestAnimationFrame(loadStep);
 
   // Register service worker for PWA
   if ('serviceWorker' in navigator) {
