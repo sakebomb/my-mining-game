@@ -32,7 +32,7 @@
 - [x] Audio system (Howler.js, spatial audio, chiptune BGM)
 - [x] Touch controls (nipplejs joystick, swipe look, tap-hold mine)
 - [x] Save/load system (IndexedDB, auto-save 30s + blur)
-- [ ] PWA setup (manifest, service worker, installable)
+- [x] PWA setup (manifest, service worker, installable)
 - [ ] Victory Scepter endgame (purchase → win screen + confetti)
 - [ ] Visual polish (bloom, glow shaders, tier coloring, particles)
 
