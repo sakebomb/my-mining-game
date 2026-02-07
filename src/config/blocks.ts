@@ -49,6 +49,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_red',
     transparent: false,
     solid: true,
+    emissive: 0xcc4444,
+    emissiveIntensity: 0.15,
   },
   [BlockType.OreOrange]: {
     type: BlockType.OreOrange,
@@ -59,6 +61,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_orange',
     transparent: false,
     solid: true,
+    emissive: 0xcc7722,
+    emissiveIntensity: 0.2,
   },
   [BlockType.OreYellow]: {
     type: BlockType.OreYellow,
@@ -69,6 +73,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_yellow',
     transparent: false,
     solid: true,
+    emissive: 0xcccc22,
+    emissiveIntensity: 0.25,
   },
   [BlockType.OreGreen]: {
     type: BlockType.OreGreen,
@@ -79,6 +85,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_green',
     transparent: false,
     solid: true,
+    emissive: 0x22cc44,
+    emissiveIntensity: 0.3,
   },
   [BlockType.OreBlue]: {
     type: BlockType.OreBlue,
@@ -89,6 +97,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_blue',
     transparent: false,
     solid: true,
+    emissive: 0x4488ff,
+    emissiveIntensity: 0.35,
   },
   [BlockType.OreIndigo]: {
     type: BlockType.OreIndigo,
@@ -99,6 +109,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_indigo',
     transparent: false,
     solid: true,
+    emissive: 0x8844ff,
+    emissiveIntensity: 0.4,
   },
   [BlockType.OreViolet]: {
     type: BlockType.OreViolet,
@@ -109,6 +121,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_violet',
     transparent: false,
     solid: true,
+    emissive: 0xaa44ff,
+    emissiveIntensity: 0.5,
   },
   [BlockType.OreDiamond]: {
     type: BlockType.OreDiamond,
@@ -119,6 +133,8 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     dropItem: 'ore_diamond',
     transparent: false,
     solid: true,
+    emissive: 0xddeeff,
+    emissiveIntensity: 0.6,
   },
   [BlockType.Bedrock]: {
     type: BlockType.Bedrock,
@@ -147,5 +163,7 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     minTier: Tier.White,
     transparent: false,
     solid: true,
+    emissive: 0x44eeff,
+    emissiveIntensity: 0.8,
   },
 };

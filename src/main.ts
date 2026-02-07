@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { WorldManager } from './world/WorldManager';
 import { PlayerController } from './player/PlayerController';
 import { MiningSystem } from './player/MiningSystem';
@@ -17,6 +20,7 @@ import { AudioManager } from './audio/AudioManager';
 import { TouchControls } from './input/TouchControls';
 import { SaveSystem, SaveData } from './save/SaveSystem';
 import { WinScreen } from './ui/WinScreen';
+import { BreakParticles } from './effects/BreakParticles';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -38,6 +42,18 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 container.appendChild(renderer.domElement);
+
+// --- Post-processing (bloom) ---
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomPass = new UnrealBloomPass(
+  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  0.4,  // strength — subtle glow
+  0.6,  // radius
+  0.85, // threshold — only bright emissive surfaces bloom
+);
+composer.addPass(bloomPass);
 
 // --- Lighting ---
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
@@ -68,6 +84,9 @@ const player = new PlayerController(camera, world);
 // --- Inventory ---
 const inventory = new Inventory();
 
+// --- Break particles ---
+const breakParticles = new BreakParticles(scene);
+
 // --- Mining ---
 const mining = new MiningSystem(world, player, scene);
 mining.setInventory(inventory);
@@ -78,9 +97,10 @@ mining.onLadderPlaced = (success, message) => {
   showPickupText(message);
   if (success) audio.play('ladder_place');
 };
-mining.onBlockMined = (blockType, _x, _y, _z) => {
+mining.onBlockMined = (blockType, bx, by, bz) => {
   audio.play('mine_break');
   const def = BLOCK_DEFS[blockType];
+  breakParticles.emit(bx, by, bz, def?.color ?? 0x888888);
   if (def?.dropItem) {
     const added = inventory.addItem(def.dropItem);
     if (added > 0) {
@@ -395,6 +415,7 @@ window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
 });
 
 // --- Game loop ---
@@ -432,6 +453,9 @@ function animate(): void {
 
   // Update mining
   mining.update(dt);
+
+  // Update break particles
+  breakParticles.update(dt);
 
   // Check teleport pads
   const teleportDest = teleportSystem.update(dt, player.position);
@@ -494,7 +518,7 @@ function animate(): void {
   hud.textContent = `Depth: ${depth}m | Pos: ${pos.x.toFixed(1)}, ${pos.y.toFixed(1)}, ${pos.z.toFixed(1)}`;
   updateHealthBar();
 
-  renderer.render(scene, camera);
+  composer.render();
 }
 
 // --- Save System ---

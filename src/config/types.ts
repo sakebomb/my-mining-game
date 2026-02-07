@@ -65,6 +65,8 @@ export interface BlockDef {
   dropItem?: string; // item ID dropped when mined
   transparent: boolean;
   solid: boolean;
+  emissive?: number; // emissive color (hex), used for ore glow
+  emissiveIntensity?: number; // 0-1 emissive strength
 }
 
 export interface OreDef {

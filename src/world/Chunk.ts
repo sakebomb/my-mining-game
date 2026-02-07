@@ -65,9 +65,11 @@ export class Chunk {
     const positions: number[] = [];
     const normals: number[] = [];
     const colors: number[] = [];
+    const emissives: number[] = [];
     const indices: number[] = [];
 
     const tmpColor = new THREE.Color();
+    const tmpEmissive = new THREE.Color();
 
     // Face definitions: [dx, dy, dz, face vertices, normal]
     const faces: Array<{
@@ -141,6 +143,7 @@ export class Chunk {
                 positions.push(px, py, pz);
                 normals.push(0, 0, 1);
                 colors.push(tmpColor.r * variation, tmpColor.g * variation, tmpColor.b * variation);
+                emissives.push(0, 0, 0);
               }
               indices.push(vo, vo + 1, vo + 2, vo, vo + 2, vo + 3);
 
@@ -150,6 +153,7 @@ export class Chunk {
                 positions.push(px, py, pz);
                 normals.push(0, 0, -1);
                 colors.push(tmpColor.r * variation, tmpColor.g * variation, tmpColor.b * variation);
+                emissives.push(0, 0, 0);
               }
               indices.push(vo2, vo2 + 2, vo2 + 1, vo2, vo2 + 3, vo2 + 2);
             }
@@ -159,6 +163,16 @@ export class Chunk {
           if (!blockDef.solid) continue;
 
           tmpColor.set(blockDef.color);
+
+          // Compute emissive color for this block
+          let er = 0, eg = 0, eb = 0;
+          if (blockDef.emissive !== undefined && blockDef.emissiveIntensity) {
+            tmpEmissive.set(blockDef.emissive);
+            const ei = blockDef.emissiveIntensity;
+            er = tmpEmissive.r * ei;
+            eg = tmpEmissive.g * ei;
+            eb = tmpEmissive.b * ei;
+          }
 
           for (const face of faces) {
             const nx = x + face.dir[0];
@@ -188,6 +202,7 @@ export class Chunk {
                 tmpColor.g * variation,
                 tmpColor.b * variation,
               );
+              emissives.push(er, eg, eb);
             }
 
             indices.push(
@@ -217,6 +232,7 @@ export class Chunk {
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+    geometry.setAttribute('aEmissive', new THREE.Float32BufferAttribute(emissives, 3));
     geometry.setIndex(indices);
 
     const material = new THREE.MeshStandardMaterial({
@@ -224,6 +240,24 @@ export class Chunk {
       roughness: 0.8,
       metalness: 0.1,
     });
+
+    // Inject per-vertex emissive into the standard material shader
+    material.onBeforeCompile = (shader) => {
+      // Add varying and attribute to vertex shader
+      shader.vertexShader = shader.vertexShader.replace(
+        'void main() {',
+        'attribute vec3 aEmissive;\nvarying vec3 vEmissiveColor;\nvoid main() {\n  vEmissiveColor = aEmissive;',
+      );
+      // Add emissive contribution in fragment shader
+      shader.fragmentShader = shader.fragmentShader.replace(
+        'void main() {',
+        'varying vec3 vEmissiveColor;\nvoid main() {',
+      );
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <emissivemap_fragment>',
+        '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vEmissiveColor;',
+      );
+    };
 
     this.mesh = new THREE.Mesh(geometry, material);
     this.mesh.position.set(

@@ -34,7 +34,7 @@
 - [x] Save/load system (IndexedDB, auto-save 30s + blur)
 - [x] PWA setup (manifest, service worker, installable)
 - [x] Victory Scepter endgame (purchase → win screen + confetti)
-- [ ] Visual polish (bloom, glow shaders, tier coloring, particles)
+- [x] Visual polish (bloom, glow shaders, tier coloring, particles)
 
 ## Phase 6: Testing & QA
 - [ ] Unit tests for core systems (mining, combat, inventory, save)
