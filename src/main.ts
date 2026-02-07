@@ -59,6 +59,10 @@ const inventory = new Inventory();
 
 // --- Mining ---
 const mining = new MiningSystem(world, player, scene);
+mining.setInventory(inventory);
+mining.onMineBlocked = (blockName) => {
+  showPickupText(`Need better pickaxe for ${blockName}!`);
+};
 mining.onBlockMined = (blockType, _x, _y, _z) => {
   const def = BLOCK_DEFS[blockType];
   if (def?.dropItem) {

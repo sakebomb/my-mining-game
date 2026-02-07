@@ -4,6 +4,7 @@ import { PlayerController } from './PlayerController';
 import { BlockType } from '../config/types';
 import { BLOCK_DEFS } from '../config/blocks';
 import { MINE_REACH, BLOCK_SIZE, MINE_INTERVAL } from '../config/constants';
+import { Inventory } from './Inventory';
 
 interface MineTarget {
   blockX: number;
@@ -22,6 +23,7 @@ export class MiningSystem {
   private world: WorldManager;
   private player: PlayerController;
   private scene: THREE.Scene;
+  private inventory: Inventory | null = null;
 
   // Mining state
   private isMining = false;
@@ -35,6 +37,9 @@ export class MiningSystem {
 
   // Callback when a block is mined
   onBlockMined: ((blockType: BlockType, x: number, y: number, z: number) => void) | null = null;
+
+  // Callback when mining is blocked by tier
+  onMineBlocked: ((blockName: string) => void) | null = null;
 
   constructor(world: WorldManager, player: PlayerController, scene: THREE.Scene) {
     this.world = world;
@@ -63,6 +68,11 @@ export class MiningSystem {
     this.scene.add(this.highlightMesh);
 
     this.setupInputs();
+  }
+
+  /** Connect inventory for tier gating and mine speed */
+  setInventory(inv: Inventory): void {
+    this.inventory = inv;
   }
 
   private setupInputs(): void {
@@ -95,28 +105,40 @@ export class MiningSystem {
 
     // Handle mining
     if (this.isMining && target) {
-      // Check if target changed
-      if (
-        !this.currentTarget ||
-        this.currentTarget.blockX !== target.blockX ||
-        this.currentTarget.blockY !== target.blockY ||
-        this.currentTarget.blockZ !== target.blockZ
-      ) {
-        this.currentTarget = target;
+      // Tier gate: check if pickaxe is strong enough
+      const blockDef = BLOCK_DEFS[target.blockType];
+      const playerTier = this.inventory?.getMineTier() ?? 0;
+      if (blockDef && playerTier < blockDef.minTier) {
+        // Can't mine this block — pickaxe tier too low
+        this.onMineBlocked?.(blockDef.name);
+        this.currentTarget = null;
         this.mineTimer = 0;
-      }
+      } else {
+        // Check if target changed
+        if (
+          !this.currentTarget ||
+          this.currentTarget.blockX !== target.blockX ||
+          this.currentTarget.blockY !== target.blockY ||
+          this.currentTarget.blockZ !== target.blockZ
+        ) {
+          this.currentTarget = target;
+          this.mineTimer = 0;
+        }
 
-      this.mineTimer += dt * 1000;
-      if (this.mineTimer >= MINE_INTERVAL) {
-        this.mineTimer -= MINE_INTERVAL;
-        this.currentTarget.hitsRemaining--;
+        // Mine speed multiplier from pickaxe
+        const mineSpeed = this.inventory?.getMineSpeed() ?? 1;
+        this.mineTimer += dt * 1000 * mineSpeed;
+        if (this.mineTimer >= MINE_INTERVAL) {
+          this.mineTimer -= MINE_INTERVAL;
+          this.currentTarget.hitsRemaining--;
 
-        if (this.currentTarget.hitsRemaining <= 0) {
-          // Block broken!
-          const { blockX, blockY, blockZ, blockType } = this.currentTarget;
-          this.world.setBlock(blockX, blockY, blockZ, BlockType.Air);
-          this.onBlockMined?.(blockType, blockX, blockY, blockZ);
-          this.currentTarget = null;
+          if (this.currentTarget.hitsRemaining <= 0) {
+            // Block broken!
+            const { blockX, blockY, blockZ, blockType } = this.currentTarget;
+            this.world.setBlock(blockX, blockY, blockZ, BlockType.Air);
+            this.onBlockMined?.(blockType, blockX, blockY, blockZ);
+            this.currentTarget = null;
+          }
         }
       }
     } else {

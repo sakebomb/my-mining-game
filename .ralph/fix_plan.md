@@ -11,7 +11,7 @@
 - [x] Player HUD (health, money, equipped gear, inventory panel)
 
 ## Phase 2: Economy & NPCs
-- [ ] Item/gear tier system (rainbow tiers, stats)
+- [x] Item/gear tier system (rainbow tiers, stats)
 - [ ] Surface NPCs (buyer + seller) with trading UI
 - [ ] Pickaxe/weapon/armor/backpack purchasing
 - [ ] Enhancement system (bones/brains/cloth, success rates)
