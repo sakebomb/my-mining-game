@@ -1,0 +1,38 @@
+[
+  {
+    "type": "zombie",
+    "name": "Zombie",
+    "hp": 30,
+    "meleeDmg": [5, 10],
+    "speed": 1.5,
+    "drop": { "brain": 0.15 },
+    "glowChance": 0.10,
+    "glowDropMultiplier": 2,
+    "minDepth": 1,
+    "description": "Shambling undead. Drops brains."
+  },
+  {
+    "type": "skeleton",
+    "name": "Skeleton",
+    "hp": 25,
+    "meleeDmg": [7, 12],
+    "speed": 2.0,
+    "drop": { "bone": 0.15 },
+    "glowChance": 0.12,
+    "glowDropMultiplier": 2,
+    "minDepth": 5,
+    "description": "Quick rattling bones. Drops bones."
+  },
+  {
+    "type": "mummy",
+    "name": "Mummy",
+    "hp": 45,
+    "meleeDmg": [10, 18],
+    "speed": 1.2,
+    "drop": { "cloth": 0.10 },
+    "glowChance": 0.15,
+    "glowDropMultiplier": 2,
+    "minDepth": 10,
+    "description": "Tough wrapped terror. Drops cloth."
+  }
+]

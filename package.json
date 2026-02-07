@@ -1,0 +1,31 @@
+{
+  "name": "my-mining-game",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "description": "Browser-based 3D voxel mining game — Dig Deep to Victory",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src/",
+    "format": "prettier --write \"src/**/*.{ts,tsx,json}\""
+  },
+  "dependencies": {
+    "cannon-es": "^0.20.0",
+    "howler": "^2.2.4",
+    "idb": "^8.0.3",
+    "nipplejs": "^0.10.2",
+    "three": "^0.182.0"
+  },
+  "devDependencies": {
+    "@types/howler": "^2.2.12",
+    "@types/three": "^0.182.0",
+    "eslint": "^10.0.0",
+    "prettier": "^3.8.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vitest": "^4.0.18"
+  }
+}

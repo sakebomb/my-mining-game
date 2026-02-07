@@ -1,0 +1,80 @@
+{
+  "tiers": [
+    { "level": 1, "name": "Crimson",   "color": "#dc2626" },
+    { "level": 2, "name": "Amber",     "color": "#f59e0b" },
+    { "level": 3, "name": "Golden",    "color": "#eab308" },
+    { "level": 4, "name": "Verdant",   "color": "#22c55e" },
+    { "level": 5, "name": "Azure",     "color": "#3b82f6" },
+    { "level": 6, "name": "Indigo",    "color": "#6366f1" },
+    { "level": 7, "name": "Violet",    "color": "#a855f7" },
+    { "level": 8, "name": "Cosmic",    "color": "#ffffff" }
+  ],
+  "pickaxes": [
+    { "tier": 1, "name": "Crimson Pickaxe",   "price": 0,     "mineSpeed": 1.0, "canMine": ["dirt", "stone"] },
+    { "tier": 2, "name": "Amber Pickaxe",     "price": 50,    "mineSpeed": 1.3, "canMine": ["dirt", "stone", "copper"] },
+    { "tier": 3, "name": "Golden Pickaxe",    "price": 200,   "mineSpeed": 1.6, "canMine": ["dirt", "stone", "copper", "iron"] },
+    { "tier": 4, "name": "Verdant Pickaxe",   "price": 600,   "mineSpeed": 2.0, "canMine": ["dirt", "stone", "copper", "iron", "silver"] },
+    { "tier": 5, "name": "Azure Pickaxe",     "price": 1500,  "mineSpeed": 2.5, "canMine": ["dirt", "stone", "copper", "iron", "silver", "gold"] },
+    { "tier": 6, "name": "Indigo Pickaxe",    "price": 4000,  "mineSpeed": 3.0, "canMine": ["dirt", "stone", "copper", "iron", "silver", "gold", "emerald"] },
+    { "tier": 7, "name": "Violet Pickaxe",    "price": 10000, "mineSpeed": 3.8, "canMine": ["dirt", "stone", "copper", "iron", "silver", "gold", "emerald", "ruby"] },
+    { "tier": 8, "name": "Cosmic Pickaxe",    "price": 25000, "mineSpeed": 5.0, "canMine": ["dirt", "stone", "copper", "iron", "silver", "gold", "emerald", "ruby", "diamond"] }
+  ],
+  "backpacks": [
+    { "tier": 1, "name": "Crimson Pouch",    "price": 0,     "slots": 10 },
+    { "tier": 2, "name": "Amber Satchel",    "price": 30,    "slots": 20 },
+    { "tier": 3, "name": "Golden Pack",      "price": 150,   "slots": 30 },
+    { "tier": 4, "name": "Verdant Rucksack", "price": 500,   "slots": 45 },
+    { "tier": 5, "name": "Azure Carrier",    "price": 1200,  "slots": 60 },
+    { "tier": 6, "name": "Indigo Vault",     "price": 3000,  "slots": 75 },
+    { "tier": 7, "name": "Violet Chest",     "price": 8000,  "slots": 90 },
+    { "tier": 8, "name": "Cosmic Hold",      "price": 20000, "slots": 110 }
+  ],
+  "weapons": [
+    { "tier": 1, "name": "Crimson Sword",   "price": 40,    "damage": [3, 6],   "speed": 1.0 },
+    { "tier": 2, "name": "Amber Blade",     "price": 150,   "damage": [6, 10],  "speed": 1.1 },
+    { "tier": 3, "name": "Golden Saber",    "price": 500,   "damage": [10, 16], "speed": 1.2 },
+    { "tier": 4, "name": "Verdant Cleaver", "price": 1200,  "damage": [15, 24], "speed": 1.3 },
+    { "tier": 5, "name": "Azure Falchion",  "price": 3000,  "damage": [22, 34], "speed": 1.4 },
+    { "tier": 6, "name": "Indigo Scimitar", "price": 7000,  "damage": [30, 46], "speed": 1.5 },
+    { "tier": 7, "name": "Violet Katana",   "price": 15000, "damage": [40, 60], "speed": 1.7 },
+    { "tier": 8, "name": "Cosmic Reaper",   "price": 35000, "damage": [55, 80], "speed": 2.0 }
+  ],
+  "armor": [
+    { "tier": 1, "name": "Crimson Vest",     "price": 30,    "defense": 2 },
+    { "tier": 2, "name": "Amber Guard",      "price": 120,   "defense": 5 },
+    { "tier": 3, "name": "Golden Mail",      "price": 400,   "defense": 9 },
+    { "tier": 4, "name": "Verdant Plate",    "price": 1000,  "defense": 14 },
+    { "tier": 5, "name": "Azure Shell",      "price": 2500,  "defense": 20 },
+    { "tier": 6, "name": "Indigo Aegis",     "price": 6000,  "defense": 28 },
+    { "tier": 7, "name": "Violet Bastion",   "price": 14000, "defense": 38 },
+    { "tier": 8, "name": "Cosmic Fortress",  "price": 32000, "defense": 50 }
+  ],
+  "ores": [
+    { "type": "stone",   "name": "Stone",   "sellPrice": 1,   "minDepth": 0,  "rarity": 0.40 },
+    { "type": "copper",  "name": "Copper",  "sellPrice": 3,   "minDepth": 3,  "rarity": 0.25 },
+    { "type": "iron",    "name": "Iron",    "sellPrice": 8,   "minDepth": 8,  "rarity": 0.18 },
+    { "type": "silver",  "name": "Silver",  "sellPrice": 20,  "minDepth": 15, "rarity": 0.12 },
+    { "type": "gold",    "name": "Gold",    "sellPrice": 50,  "minDepth": 22, "rarity": 0.08 },
+    { "type": "emerald", "name": "Emerald", "sellPrice": 120, "minDepth": 30, "rarity": 0.05 },
+    { "type": "ruby",    "name": "Ruby",    "sellPrice": 300, "minDepth": 38, "rarity": 0.03 },
+    { "type": "diamond", "name": "Diamond", "sellPrice": 800, "minDepth": 45, "rarity": 0.01 }
+  ],
+  "enhancements": {
+    "maxLevel": 5,
+    "materials": {
+      "bone":  { "successRate": 0.40, "statBoost": 0.08 },
+      "brain": { "successRate": 0.60, "statBoost": 0.12 },
+      "cloth": { "successRate": 0.80, "statBoost": 0.05 }
+    }
+  },
+  "helper": {
+    "craftCost": { "bone": 6, "brain": 1 },
+    "baseDuration": 600,
+    "clothExtension": 60
+  },
+  "victoryScepter": {
+    "name": "Victory Scepter",
+    "description": "The ultimate prize. Buy this to win the game!",
+    "bonusDiamonds": 10
+  }
+}
