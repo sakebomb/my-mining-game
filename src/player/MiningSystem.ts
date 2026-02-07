@@ -41,6 +41,12 @@ export class MiningSystem {
   // Callback when mining is blocked by tier
   onMineBlocked: ((blockName: string) => void) | null = null;
 
+  // Callback when a ladder placement is attempted
+  onLadderPlaced: ((success: boolean, message: string) => void) | null = null;
+
+  // Right-click state for ladder placement
+  private isRightClick = false;
+
   constructor(world: WorldManager, player: PlayerController, scene: THREE.Scene) {
     this.world = world;
     this.player = player;
@@ -78,11 +84,19 @@ export class MiningSystem {
   private setupInputs(): void {
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0) this.isMining = true;
+      if (e.button === 2) this.isRightClick = true;
     });
     window.addEventListener('mouseup', (e) => {
       if (e.button === 0) {
         this.isMining = false;
         this.currentTarget = null;
+      }
+      if (e.button === 2) this.isRightClick = false;
+    });
+    // Prevent context menu on right-click
+    window.addEventListener('contextmenu', (e) => {
+      if (document.pointerLockElement) {
+        e.preventDefault();
       }
     });
   }
@@ -101,6 +115,12 @@ export class MiningSystem {
       );
     } else {
       this.highlightMesh.visible = false;
+    }
+
+    // Handle right-click ladder placement
+    if (this.isRightClick && target) {
+      this.isRightClick = false; // consume the click (one placement per click)
+      this.placeLadder(target);
     }
 
     // Handle mining
@@ -185,7 +205,8 @@ export class MiningSystem {
       const block = this.world.getBlock(x, y, z);
       if (block !== BlockType.Air) {
         const def = BLOCK_DEFS[block];
-        if (def && def.solid) {
+        // Target solid blocks AND ladder blocks (ladders are non-solid but interactable)
+        if (def && (def.solid || block === BlockType.Ladder)) {
           return {
             blockX: x,
             blockY: y,
@@ -226,6 +247,34 @@ export class MiningSystem {
     }
 
     return null;
+  }
+
+  /** Place a ladder on the face of the targeted block */
+  private placeLadder(target: MineTarget): void {
+    if (!this.inventory) return;
+
+    // Check if player has ladders
+    if (!this.inventory.hasItem('ladder', 1)) {
+      this.onLadderPlaced?.(false, 'No ladders in inventory!');
+      return;
+    }
+
+    // Place adjacent to the targeted block face
+    const placeX = target.blockX + Math.round(target.faceNormal.x);
+    const placeY = target.blockY + Math.round(target.faceNormal.y);
+    const placeZ = target.blockZ + Math.round(target.faceNormal.z);
+
+    // Check that the placement spot is air
+    const existing = this.world.getBlock(placeX, placeY, placeZ);
+    if (existing !== BlockType.Air) {
+      this.onLadderPlaced?.(false, 'Can\'t place ladder there!');
+      return;
+    }
+
+    // Place the ladder
+    this.world.setBlock(placeX, placeY, placeZ, BlockType.Ladder);
+    this.inventory.removeItem('ladder', 1);
+    this.onLadderPlaced?.(true, 'Ladder placed!');
   }
 
   dispose(): void {

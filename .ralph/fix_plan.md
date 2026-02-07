@@ -20,10 +20,10 @@
 - [x] Enemy spawning system (underground, config-driven)
 - [x] Melee combat (player attacks, enemy AI, damage/health)
 - [x] Enemy drops (brain/bone/cloth, glowing variants)
-- [ ] Helper NPC (craft from drops, AI mining/fighting)
+- [x] Helper NPC (craft from drops, AI mining/fighting)
 
 ## Phase 4: World Features
-- [ ] Ladder placement and climbing
+- [x] Ladder placement and climbing
 - [ ] Teleport system (bidirectional, levels 10/20/30/40)
 - [ ] World boundaries (500m invisible walls)
 - [ ] Physics integration (cannon-es for player/enemy movement)

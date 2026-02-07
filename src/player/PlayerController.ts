@@ -15,6 +15,7 @@ import {
  * - WASD movement
  * - Mouse look (pointer lock)
  * - Gravity + jumping
+ * - Ladder climbing
  * - Simple AABB collision against voxel world
  */
 export class PlayerController {
@@ -25,6 +26,7 @@ export class PlayerController {
   position = new THREE.Vector3(0, 5, 0);
   velocity = new THREE.Vector3(0, 0, 0);
   onGround = false;
+  onLadder = false;
 
   // Health
   health = PLAYER_START_HEALTH;
@@ -80,6 +82,9 @@ export class PlayerController {
     // Clamp dt to prevent tunneling on lag spikes
     dt = Math.min(dt, 0.05);
 
+    // Check if player AABB overlaps any ladder block
+    this.onLadder = this.checkLadderOverlap(this.position);
+
     // Movement direction from keys
     const moveDir = new THREE.Vector3(0, 0, 0);
     if (this.isKeyDown('KeyW') || this.isKeyDown('ArrowUp')) moveDir.z -= 1;
@@ -101,13 +106,32 @@ export class PlayerController {
     this.velocity.x = worldMoveX * PLAYER_SPEED;
     this.velocity.z = worldMoveZ * PLAYER_SPEED;
 
-    // Gravity
-    this.velocity.y += GRAVITY * dt;
-
-    // Jump
-    if ((this.isKeyDown('Space') || this.isKeyDown('KeySpace')) && this.onGround) {
-      this.velocity.y = PLAYER_JUMP_FORCE;
+    if (this.onLadder) {
+      // On ladder: suppress gravity, allow vertical movement
+      const climbSpeed = PLAYER_SPEED * 0.7;
+      if (this.isKeyDown('Space')) {
+        this.velocity.y = climbSpeed; // climb up
+      } else if (this.isKeyDown('ShiftLeft') || this.isKeyDown('ShiftRight')) {
+        this.velocity.y = -climbSpeed; // climb down
+      } else if (moveDir.z < 0) {
+        // W key: climb up (forward = up on ladder)
+        this.velocity.y = climbSpeed;
+      } else if (moveDir.z > 0) {
+        // S key: climb down
+        this.velocity.y = -climbSpeed;
+      } else {
+        this.velocity.y = 0; // cling to ladder
+      }
       this.onGround = false;
+    } else {
+      // Normal gravity
+      this.velocity.y += GRAVITY * dt;
+
+      // Jump
+      if ((this.isKeyDown('Space') || this.isKeyDown('KeySpace')) && this.onGround) {
+        this.velocity.y = PLAYER_JUMP_FORCE;
+        this.onGround = false;
+      }
     }
 
     // Move + collide each axis separately
@@ -169,6 +193,34 @@ export class PlayerController {
       for (let by = bMinY; by <= bMaxY; by++) {
         for (let bz = bMinZ; bz <= bMaxZ; bz++) {
           if (this.world.isSolid(bx, by, bz)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /** Check if player AABB overlaps any ladder block */
+  private checkLadderOverlap(pos: THREE.Vector3): boolean {
+    const minX = pos.x - PLAYER_RADIUS;
+    const maxX = pos.x + PLAYER_RADIUS;
+    const minY = pos.y;
+    const maxY = pos.y + PLAYER_HEIGHT;
+    const minZ = pos.z - PLAYER_RADIUS;
+    const maxZ = pos.z + PLAYER_RADIUS;
+
+    const bMinX = Math.floor(minX / BLOCK_SIZE);
+    const bMaxX = Math.floor(maxX / BLOCK_SIZE);
+    const bMinY = Math.floor(minY / BLOCK_SIZE);
+    const bMaxY = Math.floor(maxY / BLOCK_SIZE);
+    const bMinZ = Math.floor(minZ / BLOCK_SIZE);
+    const bMaxZ = Math.floor(maxZ / BLOCK_SIZE);
+
+    for (let bx = bMinX; bx <= bMaxX; bx++) {
+      for (let by = bMinY; by <= bMaxY; by++) {
+        for (let bz = bMinZ; bz <= bMaxZ; bz++) {
+          if (this.world.isLadder(bx, by, bz)) {
             return true;
           }
         }

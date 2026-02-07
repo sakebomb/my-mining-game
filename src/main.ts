@@ -9,6 +9,7 @@ import { TIER_COLORS } from './config/types';
 import { Inventory, GearSlot } from './player/Inventory';
 import { NPC } from './npc/NPC';
 import { EnemyManager } from './npc/EnemyManager';
+import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
 
 // --- Scene setup ---
@@ -66,6 +67,9 @@ const mining = new MiningSystem(world, player, scene);
 mining.setInventory(inventory);
 mining.onMineBlocked = (blockName) => {
   showPickupText(`Need better pickaxe for ${blockName}!`);
+};
+mining.onLadderPlaced = (_success, message) => {
+  showPickupText(message);
 };
 mining.onBlockMined = (blockType, _x, _y, _z) => {
   const def = BLOCK_DEFS[blockType];
@@ -144,6 +148,56 @@ enemyManager.onEnemyDeath = (enemy) => {
 
 // --- Combat ---
 const combat = new CombatSystem(player, inventory);
+
+// --- Helper NPC ---
+let helper: HelperNPC | null = null;
+
+function spawnHelper(): void {
+  // Requires 6 bones + 1 brain
+  if (!inventory.hasItem('bone', 6) || !inventory.hasItem('brain', 1)) {
+    showPickupText('Need 6 Bones + 1 Brain to craft Helper!');
+    return;
+  }
+  if (helper && !helper.expired) {
+    showPickupText('Helper already active!');
+    return;
+  }
+  inventory.removeItem('bone', 6);
+  inventory.removeItem('brain', 1);
+
+  const spawnPos = player.position.clone();
+  spawnPos.x += 2;
+  const mineTier = inventory.getMineTier();
+  const lifespan = 600; // 10 minutes
+
+  if (helper) helper.dispose(scene);
+  helper = new HelperNPC(spawnPos, mineTier, lifespan, scene);
+  helper.onBlockMined = (blockType, _x, _y, _z) => {
+    const def = BLOCK_DEFS[blockType];
+    if (def?.dropItem) {
+      inventory.addItem(def.dropItem);
+    }
+  };
+  showPickupText('Helper spawned! (10 min)');
+  inventory.onChange?.();
+}
+
+// H key to craft helper, C key to feed cloth
+window.addEventListener('keydown', (e) => {
+  if (e.code === 'KeyH' && !tradingUI.isOpen) {
+    spawnHelper();
+  }
+  if (e.code === 'KeyC' && !tradingUI.isOpen && helper && !helper.expired) {
+    if (inventory.hasItem('cloth', 1)) {
+      inventory.removeItem('cloth', 1);
+      helper.extendLife(60); // +1 min
+      showPickupText('Helper +1 min!');
+      inventory.onChange?.();
+    } else {
+      showPickupText('No Cloth to feed Helper!');
+    }
+  }
+});
 
 // --- HUD: info overlay (top-left: depth + position) ---
 const hud = document.createElement('div');
@@ -265,7 +319,8 @@ instructions.innerHTML = `
   <p style="font-size: 14px; margin-top: 10px;">
     WASD — Move &nbsp;|&nbsp; Mouse — Look<br>
     Space — Jump &nbsp;|&nbsp; Hold Left Click — Mine<br>
-    E — Talk to NPC
+    Right Click — Place Ladder &nbsp;|&nbsp; Space/Shift — Climb Up/Down<br>
+    E — Talk to NPC &nbsp;|&nbsp; H — Craft Helper &nbsp;|&nbsp; C — Feed Cloth
   </p>
 `;
 document.body.appendChild(instructions);
@@ -309,6 +364,11 @@ function animate(): void {
       player.health = Math.max(0, player.health - enemyDmg);
     }
     combat.update(dt, enemyManager.enemies);
+
+    // Update helper NPC
+    if (helper && !helper.expired) {
+      helper.update(dt, player.position, world, enemyManager.enemies);
+    }
   }
 
   // Move sun shadow camera with player

@@ -114,7 +114,49 @@ export class Chunk {
           if (blockType === BlockType.Air) continue;
 
           const blockDef = BLOCK_DEFS[blockType];
-          if (!blockDef || !blockDef.solid) continue;
+          if (!blockDef) continue;
+
+          // Render ladder blocks as X-shaped cross (two thin diagonal planes)
+          if (blockType === BlockType.Ladder) {
+            tmpColor.set(blockDef.color);
+            const bx = x * BLOCK_SIZE;
+            const by = y * BLOCK_SIZE;
+            const bz = z * BLOCK_SIZE;
+            const bs = BLOCK_SIZE;
+            const variation = 0.9 + 0.1 * ((x + y + z) % 3) / 2;
+
+            // Plane 1: diagonal from corner to corner
+            const cross1: Array<[number, number, number]> = [
+              [bx, by, bz], [bx + bs, by, bz + bs], [bx + bs, by + bs, bz + bs], [bx, by + bs, bz],
+            ];
+            // Plane 2: other diagonal
+            const cross2: Array<[number, number, number]> = [
+              [bx + bs, by, bz], [bx, by, bz + bs], [bx, by + bs, bz + bs], [bx + bs, by + bs, bz],
+            ];
+
+            for (const quad of [cross1, cross2]) {
+              // Front face
+              const vo = positions.length / 3;
+              for (const [px, py, pz] of quad) {
+                positions.push(px, py, pz);
+                normals.push(0, 0, 1);
+                colors.push(tmpColor.r * variation, tmpColor.g * variation, tmpColor.b * variation);
+              }
+              indices.push(vo, vo + 1, vo + 2, vo, vo + 2, vo + 3);
+
+              // Back face (reverse winding for double-sided)
+              const vo2 = positions.length / 3;
+              for (const [px, py, pz] of quad) {
+                positions.push(px, py, pz);
+                normals.push(0, 0, -1);
+                colors.push(tmpColor.r * variation, tmpColor.g * variation, tmpColor.b * variation);
+              }
+              indices.push(vo2, vo2 + 2, vo2 + 1, vo2, vo2 + 3, vo2 + 2);
+            }
+            continue;
+          }
+
+          if (!blockDef.solid) continue;
 
           tmpColor.set(blockDef.color);
 

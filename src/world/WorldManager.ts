@@ -104,6 +104,17 @@ export class WorldManager {
     return this.isSolid(bx, by, bz);
   }
 
+  /** Check if a block position is a ladder */
+  isLadder(wx: number, wy: number, wz: number): boolean {
+    return this.getBlock(wx, wy, wz) === BlockType.Ladder;
+  }
+
+  /** Check if a world-space position (meters) overlaps a ladder block */
+  isLadderAtPosition(x: number, y: number, z: number): boolean {
+    const [bx, by, bz] = this.worldToBlock(x, y, z);
+    return this.isLadder(bx, by, bz);
+  }
+
   /** Generate terrain for a chunk */
   private generateChunk(chunk: Chunk): void {
     const { cx, cy, cz } = chunk;
