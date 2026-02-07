@@ -17,9 +17,9 @@
 - [x] Enhancement system (bones/brains/cloth, success rates)
 
 ## Phase 3: Combat & Enemies
-- [ ] Enemy spawning system (underground, config-driven)
-- [ ] Melee combat (player attacks, enemy AI, damage/health)
-- [ ] Enemy drops (brain/bone/cloth, glowing variants)
+- [x] Enemy spawning system (underground, config-driven)
+- [x] Melee combat (player attacks, enemy AI, damage/health)
+- [x] Enemy drops (brain/bone/cloth, glowing variants)
 - [ ] Helper NPC (craft from drops, AI mining/fighting)
 
 ## Phase 4: World Features

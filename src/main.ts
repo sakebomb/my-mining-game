@@ -3,10 +3,12 @@ import { WorldManager } from './world/WorldManager';
 import { PlayerController } from './player/PlayerController';
 import { MiningSystem } from './player/MiningSystem';
 import { BLOCK_DEFS } from './config/blocks';
+import { CombatSystem } from './player/CombatSystem';
 import { ITEMS } from './config/items';
 import { TIER_COLORS } from './config/types';
 import { Inventory, GearSlot } from './player/Inventory';
 import { NPC } from './npc/NPC';
+import { EnemyManager } from './npc/EnemyManager';
 import { TradingUI } from './ui/TradingUI';
 
 // --- Scene setup ---
@@ -126,6 +128,22 @@ window.addEventListener('keydown', (e) => {
     }
   }
 });
+
+// --- Enemies ---
+const enemyManager = new EnemyManager(scene, world);
+enemyManager.onEnemyDeath = (enemy) => {
+  const drops = enemy.rollDrops();
+  for (const drop of drops) {
+    const added = inventory.addItem(drop.itemId, drop.quantity);
+    if (added > 0) {
+      const name = ITEMS[drop.itemId]?.name ?? drop.itemId;
+      showPickupText(`+${added} ${name}`);
+    }
+  }
+};
+
+// --- Combat ---
+const combat = new CombatSystem(player, inventory);
 
 // --- HUD: info overlay (top-left: depth + position) ---
 const hud = document.createElement('div');
@@ -283,6 +301,15 @@ function animate(): void {
 
   // Update mining
   mining.update(dt);
+
+  // Update enemies and combat
+  if (!tradingUI.isOpen) {
+    const enemyDmg = enemyManager.update(dt, player.position);
+    if (enemyDmg > 0) {
+      player.health = Math.max(0, player.health - enemyDmg);
+    }
+    combat.update(dt, enemyManager.enemies);
+  }
 
   // Move sun shadow camera with player
   sun.position.set(
