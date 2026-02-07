@@ -7,7 +7,7 @@
 - [x] Procedural world generation (surface + underground, ore placement)
 - [x] First-person camera + PC controls (WASD, mouse look, jump)
 - [x] Block mining mechanics (raycasting, block removal, drops)
-- [ ] Basic inventory system (pickup items, backpack capacity)
+- [x] Basic inventory system (pickup items, backpack capacity)
 - [ ] Player HUD (health, money, equipped gear, inventory panel)
 
 ## Phase 2: Economy & NPCs

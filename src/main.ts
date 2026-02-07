@@ -3,6 +3,8 @@ import { WorldManager } from './world/WorldManager';
 import { PlayerController } from './player/PlayerController';
 import { MiningSystem } from './player/MiningSystem';
 import { BLOCK_DEFS } from './config/blocks';
+import { ITEMS } from './config/items';
+import { Inventory } from './player/Inventory';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -51,13 +53,22 @@ const world = new WorldManager(scene);
 // --- Player ---
 const player = new PlayerController(camera, world);
 
+// --- Inventory ---
+const inventory = new Inventory();
+
 // --- Mining ---
 const mining = new MiningSystem(world, player, scene);
 mining.onBlockMined = (blockType, _x, _y, _z) => {
   const def = BLOCK_DEFS[blockType];
   if (def?.dropItem) {
-    console.log(`Mined ${def.name} → got ${def.dropItem}`);
-    // TODO: add to inventory
+    const added = inventory.addItem(def.dropItem);
+    if (added > 0) {
+      const itemDef = ITEMS[def.dropItem];
+      const name = itemDef?.name ?? def.dropItem;
+      showPickupText(`+1 ${name}`);
+    } else {
+      showPickupText('Inventory full!');
+    }
   }
 };
 
@@ -68,6 +79,62 @@ hud.style.cssText = `
   font-size: 14px; pointer-events: none; z-index: 100; text-shadow: 1px 1px 2px black;
 `;
 document.body.appendChild(hud);
+
+// --- Inventory HUD (right side panel) ---
+const inventoryHud = document.createElement('div');
+inventoryHud.style.cssText = `
+  position: fixed; top: 10px; right: 10px; color: white; font-family: monospace;
+  font-size: 13px; pointer-events: none; z-index: 100; text-shadow: 1px 1px 2px black;
+  background: rgba(0,0,0,0.4); padding: 10px 14px; border-radius: 6px;
+  min-width: 160px; max-height: 60vh; overflow-y: auto;
+`;
+document.body.appendChild(inventoryHud);
+
+function updateInventoryHud(): void {
+  const pickDef = inventory.getEquippedDef('pickaxe');
+  const items = inventory.getAllItems();
+
+  let html = `<b>$${inventory.money}</b><br>`;
+  html += `<span style="color:#ffcc00">${pickDef?.name ?? 'No Pickaxe'}</span><br>`;
+  html += `<span style="font-size:11px;color:#aaa">${inventory.usedSlots}/${inventory.maxSlots} slots</span>`;
+  html += `<hr style="border-color:#555;margin:4px 0">`;
+
+  if (items.length === 0) {
+    html += `<span style="color:#888">Empty</span>`;
+  } else {
+    for (const slot of items) {
+      const def = ITEMS[slot.itemId];
+      const name = def?.name ?? slot.itemId;
+      html += `${name} x${slot.quantity}<br>`;
+    }
+  }
+
+  inventoryHud.innerHTML = html;
+}
+
+// Update HUD when inventory changes
+inventory.onChange = updateInventoryHud;
+updateInventoryHud();
+
+// --- Pickup text (floating feedback) ---
+const pickupTextEl = document.createElement('div');
+pickupTextEl.style.cssText = `
+  position: fixed; bottom: 30%; left: 50%; transform: translateX(-50%);
+  color: #ffdd44; font-family: monospace; font-size: 16px; font-weight: bold;
+  pointer-events: none; z-index: 100; text-shadow: 1px 1px 3px black;
+  opacity: 0; transition: opacity 0.3s;
+`;
+document.body.appendChild(pickupTextEl);
+
+let pickupTimer: ReturnType<typeof setTimeout> | null = null;
+function showPickupText(text: string): void {
+  pickupTextEl.textContent = text;
+  pickupTextEl.style.opacity = '1';
+  if (pickupTimer) clearTimeout(pickupTimer);
+  pickupTimer = setTimeout(() => {
+    pickupTextEl.style.opacity = '0';
+  }, 1200);
+}
 
 // Instructions overlay
 const instructions = document.createElement('div');
