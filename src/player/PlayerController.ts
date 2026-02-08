@@ -122,8 +122,8 @@ export class PlayerController {
     // Rotate movement by yaw
     const sinYaw = Math.sin(this.yaw);
     const cosYaw = Math.cos(this.yaw);
-    const worldMoveX = moveDir.x * cosYaw - moveDir.z * sinYaw;
-    const worldMoveZ = moveDir.x * sinYaw + moveDir.z * cosYaw;
+    const worldMoveX = moveDir.x * cosYaw + moveDir.z * sinYaw;
+    const worldMoveZ = -moveDir.x * sinYaw + moveDir.z * cosYaw;
 
     // Apply horizontal velocity
     this.velocity.x = worldMoveX * PLAYER_SPEED;
