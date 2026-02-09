@@ -57,7 +57,10 @@ npm run format     # format with Prettier
 8 tiers following rainbow progression: Stone → Red → Orange → Yellow → Green → Blue → Indigo → Violet → White (Diamond). Higher-tier pickaxes unlock deeper ores.
 
 ### Combat
-Underground enemies — Zombie (brain drops), Skeleton (bone drops), Mummy (cloth drops). Glowing variants (10-15% chance) have double drop rates.
+Underground enemies — Zombie (brain drops), Skeleton (bone drops), Mummy (cloth drops). Glowing variants (10-15% chance) have double drop rates. Enemies scale with depth (up to 2× stats at level 50) and play a shrink/fade death animation.
+
+### Armor & Defense
+Equipped armor reduces incoming damage by its defense stat (enhanced armor scales further). Minimum 1 damage always dealt. Effective defense is shown in the HUD side panel.
 
 ### Economy
 - **Buyer NPC** — sell ores and enemy drops for money
@@ -79,7 +82,7 @@ Purchase the Victory Scepter (costs sum of all other items + 10 diamonds) to win
 src/
 ├── audio/       AudioManager — spatial audio, procedural sounds
 ├── config/      Game data (blocks, ores, items, enemies, constants, types)
-├── effects/     Break particles
+├── effects/     Break particles, visual effects
 ├── input/       Touch controls (nipplejs)
 ├── npc/         Enemy, EnemyManager, HelperNPC, surface NPCs
 ├── physics/     cannon-es integration
