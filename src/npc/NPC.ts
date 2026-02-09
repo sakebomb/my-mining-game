@@ -46,16 +46,16 @@ export class NPC {
       const signGroup = new THREE.Group();
       signGroup.position.set(1, 0, 0); // offset to the right of the NPC
 
-      // Wooden post
-      const postGeo = new THREE.BoxGeometry(0.08, 1.4, 0.08);
+      // Wooden post (stops below the sign board)
+      const postGeo = new THREE.BoxGeometry(0.08, 1.0, 0.08);
       const postMat = new THREE.MeshStandardMaterial({ color: 0x8b6914, roughness: 0.9 });
       const post = new THREE.Mesh(postGeo, postMat);
-      post.position.y = 0.7;
+      post.position.y = 0.5;
       post.castShadow = true;
       signGroup.add(post);
 
       // Sign board
-      const boardGeo = new THREE.BoxGeometry(0.8, 0.4, 0.06);
+      const boardGeo = new THREE.BoxGeometry(0.8, 0.4, 0.1);
       const boardCanvas = document.createElement('canvas');
       boardCanvas.width = 128;
       boardCanvas.height = 64;

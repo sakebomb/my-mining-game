@@ -42,8 +42,8 @@ export class MiningSystem {
   // Callback when mining is blocked by tier
   onMineBlocked: ((blockName: string) => void) | null = null;
 
-  // Callback when a ladder placement is attempted
-  onLadderPlaced: ((success: boolean, message: string) => void) | null = null;
+  // Callback when an item is placed (ladder or light)
+  onItemPlaced: ((success: boolean, message: string) => void) | null = null;
 
   // Right-click state for ladder placement
   private isRightClick = false;
@@ -118,10 +118,10 @@ export class MiningSystem {
       this.highlightMesh.visible = false;
     }
 
-    // Handle right-click ladder placement
+    // Handle right-click item placement (ladder or light)
     if (this.isRightClick && target) {
       this.isRightClick = false; // consume the click (one placement per click)
-      this.placeLadder(target);
+      this.placeItem(target);
     }
 
     // Handle mining (mouse or touch)
@@ -251,13 +251,28 @@ export class MiningSystem {
     return null;
   }
 
-  /** Place a ladder on the face of the targeted block */
-  private placeLadder(target: MineTarget): void {
+  // Callback when a light block is placed (for LightManager integration)
+  onLightPlaced: ((bx: number, by: number, bz: number) => void) | null = null;
+
+  /** Place a ladder or light on the face of the targeted block */
+  private placeItem(target: MineTarget): void {
     if (!this.inventory) return;
 
-    // Check if player has ladders
-    if (!this.inventory.hasItem('ladder', 1)) {
-      this.onLadderPlaced?.(false, 'No ladders in inventory!');
+    // Determine what to place: ladder first, then light
+    let itemId: string;
+    let blockType: BlockType;
+    let label: string;
+
+    if (this.inventory.hasItem('ladder', 1)) {
+      itemId = 'ladder';
+      blockType = BlockType.Ladder;
+      label = 'Ladder';
+    } else if (this.inventory.hasItem('light', 1)) {
+      itemId = 'light';
+      blockType = BlockType.Light;
+      label = 'Light';
+    } else {
+      this.onItemPlaced?.(false, 'No ladders or lights!');
       return;
     }
 
@@ -269,14 +284,19 @@ export class MiningSystem {
     // Check that the placement spot is air
     const existing = this.world.getBlock(placeX, placeY, placeZ);
     if (existing !== BlockType.Air) {
-      this.onLadderPlaced?.(false, 'Can\'t place ladder there!');
+      this.onItemPlaced?.(false, `Can't place ${label.toLowerCase()} there!`);
       return;
     }
 
-    // Place the ladder
-    this.world.setBlock(placeX, placeY, placeZ, BlockType.Ladder);
-    this.inventory.removeItem('ladder', 1);
-    this.onLadderPlaced?.(true, 'Ladder placed!');
+    // Place the block
+    this.world.setBlock(placeX, placeY, placeZ, blockType);
+    this.inventory.removeItem(itemId, 1);
+    this.onItemPlaced?.(true, `${label} placed!`);
+
+    // Notify light manager if a light was placed
+    if (blockType === BlockType.Light) {
+      this.onLightPlaced?.(placeX, placeY, placeZ);
+    }
   }
 
   dispose(): void {

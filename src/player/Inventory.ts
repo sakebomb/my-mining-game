@@ -43,42 +43,47 @@ export class Inventory {
     return def?.stats?.slots ?? 10;
   }
 
-  /** Current number of distinct item stacks in inventory */
+  /** Current number of stacks used (items beyond maxStack take additional slots) */
   get usedSlots(): number {
-    return this.items.size;
+    let slots = 0;
+    for (const [itemId, qty] of this.items) {
+      const def = ITEMS[itemId];
+      const maxStack = def?.maxStack ?? 20;
+      slots += Math.ceil(qty / maxStack);
+    }
+    return slots;
   }
 
-  /** Check if inventory has room for a new item (or existing stack) */
+  /** Check if inventory has room for at least 1 of this item */
   canAdd(itemId: string, quantity = 1): boolean {
-    const existing = this.items.get(itemId) ?? 0;
     const def = ITEMS[itemId];
     if (!def) return false;
 
-    if (existing > 0) {
-      // Already have a stack — check max stack
-      return existing + quantity <= def.maxStack;
-    }
-    // New item — need a free slot
-    return this.usedSlots < this.maxSlots;
+    const existing = this.items.get(itemId) ?? 0;
+    const maxStack = def.maxStack;
+    const currentSlots = existing > 0 ? Math.ceil(existing / maxStack) : 0;
+    const newSlots = Math.ceil((existing + quantity) / maxStack);
+    const additionalSlots = newSlots - currentSlots;
+
+    return this.usedSlots + additionalSlots <= this.maxSlots;
   }
 
   /**
    * Add items to inventory. Returns the quantity actually added
-   * (may be less if stack/capacity limit reached).
+   * (may be less if slot capacity is reached).
    */
   addItem(itemId: string, quantity = 1): number {
     const def = ITEMS[itemId];
     if (!def) return 0;
 
     const existing = this.items.get(itemId) ?? 0;
+    const maxStack = def.maxStack;
+    const currentSlots = existing > 0 ? Math.ceil(existing / maxStack) : 0;
+    const freeSlots = this.maxSlots - this.usedSlots + currentSlots;
 
-    if (existing === 0 && this.usedSlots >= this.maxSlots) {
-      // No room for new stack
-      return 0;
-    }
-
-    const maxCanAdd = def.maxStack - existing;
-    const toAdd = Math.min(quantity, maxCanAdd);
+    // Max items that fit in freeSlots worth of stacks
+    const maxItems = freeSlots * maxStack;
+    const toAdd = Math.min(quantity, maxItems - existing);
     if (toAdd <= 0) return 0;
 
     this.items.set(itemId, existing + toAdd);
