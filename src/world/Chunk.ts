@@ -3,6 +3,22 @@ import { BlockType } from '../config/types';
 import { BLOCK_DEFS } from '../config/blocks';
 import { CHUNK_SIZE, BLOCK_SIZE } from '../config/constants';
 
+/** Shared onBeforeCompile for per-vertex emissive — stable identity avoids shader recompilation */
+function patchEmissiveShader(shader: THREE.WebGLProgramParametersWithUniforms): void {
+  shader.vertexShader = shader.vertexShader.replace(
+    'void main() {',
+    'attribute vec3 aEmissive;\nvarying vec3 vEmissiveColor;\nvoid main() {\n  vEmissiveColor = aEmissive;',
+  );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    'void main() {',
+    'varying vec3 vEmissiveColor;\nvoid main() {',
+  );
+  shader.fragmentShader = shader.fragmentShader.replace(
+    '#include <emissivemap_fragment>',
+    '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vEmissiveColor;',
+  );
+}
+
 /**
  * A 16×16×16 voxel chunk.
  * Stores block data as a flat Uint8Array for performance.
@@ -241,23 +257,9 @@ export class Chunk {
       metalness: 0.1,
     });
 
-    // Inject per-vertex emissive into the standard material shader
-    material.onBeforeCompile = (shader) => {
-      // Add varying and attribute to vertex shader
-      shader.vertexShader = shader.vertexShader.replace(
-        'void main() {',
-        'attribute vec3 aEmissive;\nvarying vec3 vEmissiveColor;\nvoid main() {\n  vEmissiveColor = aEmissive;',
-      );
-      // Add emissive contribution in fragment shader
-      shader.fragmentShader = shader.fragmentShader.replace(
-        'void main() {',
-        'varying vec3 vEmissiveColor;\nvoid main() {',
-      );
-      shader.fragmentShader = shader.fragmentShader.replace(
-        '#include <emissivemap_fragment>',
-        '#include <emissivemap_fragment>\n  totalEmissiveRadiance += vEmissiveColor;',
-      );
-    };
+    // Inject per-vertex emissive — shared function identity prevents shader recompilation
+    material.onBeforeCompile = patchEmissiveShader;
+    material.customProgramCacheKey = () => 'chunk-emissive';
 
     this.mesh = new THREE.Mesh(geometry, material);
     this.mesh.position.set(

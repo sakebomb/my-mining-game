@@ -8,12 +8,13 @@ import { MiningSystem } from './player/MiningSystem';
 import { BLOCK_DEFS } from './config/blocks';
 import { CombatSystem } from './player/CombatSystem';
 import { ITEMS } from './config/items';
-import { TIER_COLORS } from './config/types';
+import { TIER_COLORS, BlockType } from './config/types';
 import { Inventory, GearSlot } from './player/Inventory';
 import { NPC } from './npc/NPC';
 import { EnemyManager } from './npc/EnemyManager';
 import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
+import { LightManager } from './world/LightManager';
 import { TeleportSystem } from './world/TeleportSystem';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
@@ -99,20 +100,30 @@ const inventory = new Inventory();
 // --- Break particles ---
 const breakParticles = new BreakParticles(scene);
 
+// --- Light Manager ---
+const lightManager = new LightManager(scene);
+
 // --- Mining ---
 const mining = new MiningSystem(world, player, scene);
 mining.setInventory(inventory);
 mining.onMineBlocked = (blockName) => {
   showPickupText(`Need better pickaxe for ${blockName}!`);
 };
-mining.onLadderPlaced = (success, message) => {
+mining.onItemPlaced = (success, message) => {
   showPickupText(message);
   if (success) audio.play('ladder_place');
+};
+mining.onLightPlaced = (bx, by, bz) => {
+  lightManager.addLight(bx, by, bz);
 };
 mining.onBlockMined = (blockType, bx, by, bz) => {
   audio.play('mine_break');
   const def = BLOCK_DEFS[blockType];
   breakParticles.emit(bx, by, bz, def?.color ?? 0x888888);
+  // Remove PointLight when a Light block is mined
+  if (blockType === BlockType.Light) {
+    lightManager.removeLight(bx, by, bz);
+  }
   if (def?.dropItem) {
     const added = inventory.addItem(def.dropItem);
     if (added > 0) {
@@ -132,7 +143,7 @@ const buyerNPC = new NPC({
   position: new THREE.Vector3(5, 0.0, 5),
   color: 0x44aa44,
   interactRadius: 3,
-  role: 'BUYER',
+  role: 'Buy Here',
 }, scene);
 
 const sellerNPC = new NPC({
@@ -140,7 +151,7 @@ const sellerNPC = new NPC({
   position: new THREE.Vector3(-5, 0.0, 5),
   color: 0x4488cc,
   interactRadius: 3,
-  role: 'SELLER',
+  role: 'Sell Here',
 }, scene);
 
 const npcs = [buyerNPC, sellerNPC];
@@ -430,7 +441,7 @@ instructions.innerHTML = `
   <p style="font-size: 14px; margin-top: 10px;">
     WASD — Move &nbsp;|&nbsp; Mouse — Look<br>
     Space — Jump &nbsp;|&nbsp; Hold Left Click — Mine<br>
-    Right Click — Place Ladder &nbsp;|&nbsp; Space/Shift — Climb Up/Down<br>
+    Right Click — Place Ladder/Light &nbsp;|&nbsp; Space/Shift — Climb Up/Down<br>
     E — Talk to NPC &nbsp;|&nbsp; H — Craft Helper &nbsp;|&nbsp; C — Feed Cloth<br>
     M — Toggle Sound
   </p>

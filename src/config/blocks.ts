@@ -164,4 +164,16 @@ export const BLOCK_DEFS: Record<number, BlockDef> = {
     emissive: 0x44eeff,
     emissiveIntensity: 0.8,
   },
+  [BlockType.Light]: {
+    type: BlockType.Light,
+    name: 'Light',
+    color: 0xffdd44,
+    hardness: 1,
+    minTier: Tier.Stone,
+    dropItem: 'light',
+    transparent: false,
+    solid: true,
+    emissive: 0xffdd44,
+    emissiveIntensity: 0.9,
+  },
 };

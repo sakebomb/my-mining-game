@@ -7,7 +7,7 @@ export const ITEMS: Record<string, ItemDef | GearDef> = {
     name: 'Dirt',
     category: 'ore',
     stackable: true,
-    maxStack: 99,
+    maxStack: 20,
     sellPrice: 0,
     buyPrice: 0,
   },
@@ -16,28 +16,31 @@ export const ITEMS: Record<string, ItemDef | GearDef> = {
     name: 'Stone',
     category: 'ore',
     stackable: true,
-    maxStack: 99,
+    maxStack: 20,
     sellPrice: 1,
     buyPrice: 0,
   },
 
   // Ores
-  ore_red: { id: 'ore_red', name: 'Copper Ore', category: 'ore', tier: Tier.Red, stackable: true, maxStack: 99, sellPrice: 5, buyPrice: 0 },
-  ore_orange: { id: 'ore_orange', name: 'Iron Ore', category: 'ore', tier: Tier.Orange, stackable: true, maxStack: 99, sellPrice: 12, buyPrice: 0 },
-  ore_yellow: { id: 'ore_yellow', name: 'Gold Ore', category: 'ore', tier: Tier.Yellow, stackable: true, maxStack: 99, sellPrice: 25, buyPrice: 0 },
-  ore_green: { id: 'ore_green', name: 'Emerald', category: 'ore', tier: Tier.Green, stackable: true, maxStack: 99, sellPrice: 50, buyPrice: 0 },
-  ore_blue: { id: 'ore_blue', name: 'Sapphire', category: 'ore', tier: Tier.Blue, stackable: true, maxStack: 99, sellPrice: 100, buyPrice: 0 },
-  ore_indigo: { id: 'ore_indigo', name: 'Amethyst', category: 'ore', tier: Tier.Indigo, stackable: true, maxStack: 99, sellPrice: 200, buyPrice: 0 },
-  ore_violet: { id: 'ore_violet', name: 'Mythril', category: 'ore', tier: Tier.Violet, stackable: true, maxStack: 99, sellPrice: 400, buyPrice: 0 },
-  ore_diamond: { id: 'ore_diamond', name: 'Diamond', category: 'ore', tier: Tier.White, stackable: true, maxStack: 99, sellPrice: 1000, buyPrice: 0 },
+  ore_red: { id: 'ore_red', name: 'Copper Ore', category: 'ore', tier: Tier.Red, stackable: true, maxStack: 20, sellPrice: 5, buyPrice: 0 },
+  ore_orange: { id: 'ore_orange', name: 'Iron Ore', category: 'ore', tier: Tier.Orange, stackable: true, maxStack: 20, sellPrice: 12, buyPrice: 0 },
+  ore_yellow: { id: 'ore_yellow', name: 'Gold Ore', category: 'ore', tier: Tier.Yellow, stackable: true, maxStack: 20, sellPrice: 25, buyPrice: 0 },
+  ore_green: { id: 'ore_green', name: 'Emerald', category: 'ore', tier: Tier.Green, stackable: true, maxStack: 20, sellPrice: 50, buyPrice: 0 },
+  ore_blue: { id: 'ore_blue', name: 'Sapphire', category: 'ore', tier: Tier.Blue, stackable: true, maxStack: 20, sellPrice: 100, buyPrice: 0 },
+  ore_indigo: { id: 'ore_indigo', name: 'Amethyst', category: 'ore', tier: Tier.Indigo, stackable: true, maxStack: 20, sellPrice: 200, buyPrice: 0 },
+  ore_violet: { id: 'ore_violet', name: 'Mythril', category: 'ore', tier: Tier.Violet, stackable: true, maxStack: 20, sellPrice: 400, buyPrice: 0 },
+  ore_diamond: { id: 'ore_diamond', name: 'Diamond', category: 'ore', tier: Tier.White, stackable: true, maxStack: 20, sellPrice: 1000, buyPrice: 0 },
 
   // Enemy drops
-  bone: { id: 'bone', name: 'Bone', category: 'drop', stackable: true, maxStack: 99, sellPrice: 8, buyPrice: 0 },
-  brain: { id: 'brain', name: 'Brain', category: 'drop', stackable: true, maxStack: 99, sellPrice: 15, buyPrice: 0 },
-  cloth: { id: 'cloth', name: 'Cloth', category: 'drop', stackable: true, maxStack: 99, sellPrice: 12, buyPrice: 0 },
+  bone: { id: 'bone', name: 'Bone', category: 'drop', stackable: true, maxStack: 20, sellPrice: 8, buyPrice: 0 },
+  brain: { id: 'brain', name: 'Brain', category: 'drop', stackable: true, maxStack: 20, sellPrice: 15, buyPrice: 0 },
+  cloth: { id: 'cloth', name: 'Cloth', category: 'drop', stackable: true, maxStack: 20, sellPrice: 12, buyPrice: 0 },
 
   // Ladder
-  ladder: { id: 'ladder', name: 'Ladder', category: 'consumable', stackable: true, maxStack: 99, sellPrice: 2, buyPrice: 10 },
+  ladder: { id: 'ladder', name: 'Ladder', category: 'consumable', stackable: true, maxStack: 20, sellPrice: 2, buyPrice: 10 },
+
+  // Light
+  light: { id: 'light', name: 'Light', category: 'consumable', stackable: true, maxStack: 20, sellPrice: 5, buyPrice: 15 },
 
   // Pickaxes (gear)
   pick_stone: { id: 'pick_stone', name: 'Stone Pickaxe', category: 'gear', gearSlot: 'pickaxe', tier: Tier.Stone, stackable: false, maxStack: 1, sellPrice: 0, buyPrice: 0, stats: { mineSpeed: 1, mineTier: 0 } },
