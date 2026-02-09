@@ -5,6 +5,7 @@ import { BlockType } from '../config/types';
 import { BLOCK_DEFS } from '../config/blocks';
 import { MINE_REACH, BLOCK_SIZE, MINE_INTERVAL } from '../config/constants';
 import { Inventory } from './Inventory';
+import type { NPCZoneManager } from '../world/NPCZoneManager';
 
 interface MineTarget {
   blockX: number;
@@ -24,6 +25,7 @@ export class MiningSystem {
   private player: PlayerController;
   private scene: THREE.Scene;
   private inventory: Inventory | null = null;
+  private npcZoneManager: NPCZoneManager | null = null;
 
   // Mining state
   private isMining = false;
@@ -82,6 +84,11 @@ export class MiningSystem {
     this.inventory = inv;
   }
 
+  /** Connect NPC zone manager for protected area feedback */
+  setNPCZoneManager(mgr: NPCZoneManager): void {
+    this.npcZoneManager = mgr;
+  }
+
   private setupInputs(): void {
     window.addEventListener('mousedown', (e) => {
       if (e.button === 0) this.isMining = true;
@@ -127,6 +134,14 @@ export class MiningSystem {
     // Handle mining (mouse or touch)
     const mining = this.isMining || this.touchMining;
     if (mining && target) {
+      // Protected NPC zone check
+      if (this.npcZoneManager?.isProtected(target.blockX, target.blockY, target.blockZ)) {
+        this.onMineBlocked?.('Protected Area');
+        this.currentTarget = null;
+        this.mineTimer = 0;
+        return;
+      }
+
       // Tier gate: check if pickaxe is strong enough
       const blockDef = BLOCK_DEFS[target.blockType];
       const playerTier = this.inventory?.getMineTier() ?? 0;

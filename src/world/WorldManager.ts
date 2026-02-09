@@ -11,6 +11,7 @@ import {
   MAX_DEPTH_BLOCKS,
 } from '../config/constants';
 import { noise2d, fbm2d, noise3d, SeededRNG } from '../utils/noise';
+import type { NPCZoneManager } from './NPCZoneManager';
 
 const chunkKey = (cx: number, cy: number, cz: number) => `${cx},${cy},${cz}`;
 
@@ -23,11 +24,17 @@ export class WorldManager {
   readonly seed: number;
   private chunks = new Map<string, Chunk>();
   private rng: SeededRNG;
+  private npcZoneManager: NPCZoneManager | null = null;
 
   constructor(scene: THREE.Scene, seed?: number) {
     this.scene = scene;
     this.seed = seed ?? Math.floor(Math.random() * 0x7fffffff);
     this.rng = new SeededRNG(this.seed);
+  }
+
+  /** Enable NPC zone protection (call AFTER placePatios) */
+  setNPCZoneManager(mgr: NPCZoneManager): void {
+    this.npcZoneManager = mgr;
   }
 
   /** Get block type at world block coordinates */
@@ -46,6 +53,9 @@ export class WorldManager {
 
   /** Set block at world block coordinates, marks chunk dirty */
   setBlock(wx: number, wy: number, wz: number, type: BlockType): void {
+    // Prevent destroying blocks in protected NPC zones
+    if (type === BlockType.Air && this.npcZoneManager?.isProtected(wx, wy, wz)) return;
+
     const cx = Math.floor(wx / CHUNK_SIZE);
     const cy = Math.floor(wy / CHUNK_SIZE);
     const cz = Math.floor(wz / CHUNK_SIZE);

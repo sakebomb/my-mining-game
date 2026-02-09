@@ -16,6 +16,7 @@ import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
 import { LightManager } from './world/LightManager';
 import { TeleportSystem } from './world/TeleportSystem';
+import { NPCZoneManager } from './world/NPCZoneManager';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
 import { TouchControls } from './input/TouchControls';
@@ -144,7 +145,7 @@ const buyerNPC = new NPC({
   position: new THREE.Vector3(5, 0.0, 5),
   color: 0x44aa44,
   interactRadius: 3,
-  role: 'Buy Here',
+  role: 'Sell stuff here',
 }, scene);
 
 const sellerNPC = new NPC({
@@ -152,7 +153,7 @@ const sellerNPC = new NPC({
   position: new THREE.Vector3(-5, 0.0, 5),
   color: 0x4488cc,
   interactRadius: 3,
-  role: 'Sell Here',
+  role: 'Buy stuff here',
 }, scene);
 
 const npcs = [buyerNPC, sellerNPC];
@@ -657,6 +658,13 @@ window.addEventListener('keydown', (e) => {
         // Place teleport pads once all chunks are generated, then rebuild affected meshes
         padsPlaced = true;
         teleportSystem.placePads();
+
+        // Place NPC stone patios, then enable protection
+        const npcZoneManager = new NPCZoneManager(world);
+        npcZoneManager.placePatios();
+        world.setNPCZoneManager(npcZoneManager);
+        mining.setNPCZoneManager(npcZoneManager);
+
         world.update(player.position.x, player.position.y, player.position.z);
       }
 
