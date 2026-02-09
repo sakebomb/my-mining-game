@@ -66,8 +66,11 @@ export class NPCZoneManager {
       }
 
       // Clear air above the patio (protectHeight blocks)
-      for (let bx = minBX; bx <= maxBX; bx++) {
-        for (let bz = minBZ; bz <= maxBZ; bz++) {
+      // Extend clearing 2 blocks beyond the stone floor to prevent terrain
+      // walls from trapping players at the patio edge (player AABB overlap).
+      const clearBuffer = 2;
+      for (let bx = minBX - clearBuffer; bx <= maxBX + clearBuffer; bx++) {
+        for (let bz = minBZ - clearBuffer; bz <= maxBZ + clearBuffer; bz++) {
           for (let dy = 1; dy <= zone.protectHeight; dy++) {
             this.world.setBlock(bx, surfaceY + dy, bz, BlockType.Air);
           }
