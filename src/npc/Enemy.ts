@@ -24,13 +24,24 @@ export class Enemy {
   private attackCooldown = 0;
   private onGround = false;
 
-  /** Set to true when dead (waiting for cleanup) */
+  /** Set to true when dead and animation finished (ready for cleanup) */
   isDead = false;
 
-  constructor(def: EnemyDef, spawnPos: THREE.Vector3, isGlowing: boolean, scene: THREE.Scene) {
+  /** True during death animation (publicly readable for drop collection) */
+  isDying = false;
+  /** Set by EnemyManager after processing death drops */
+  deathHandled = false;
+  private deathTimer = 0;
+  private static readonly DEATH_ANIM_DURATION = 0.5;
+
+  /** Depth-based stat multiplier: 1.0 at surface, 2.0 at max depth */
+  private readonly scaleFactor: number;
+
+  constructor(def: EnemyDef, spawnPos: THREE.Vector3, isGlowing: boolean, scene: THREE.Scene, depthLevel = 0) {
     this.def = def;
     this.isGlowing = isGlowing;
-    this.health = def.health;
+    this.scaleFactor = 1 + (depthLevel / 50);
+    this.health = Math.round(def.health * this.scaleFactor);
     this.position = spawnPos.clone();
 
     this.mesh = new THREE.Group();
@@ -84,6 +95,23 @@ export class Enemy {
   update(dt: number, playerPos: THREE.Vector3, world: WorldManager): number {
     if (this.isDead) return 0;
 
+    // Death animation: shrink and fade over DEATH_ANIM_DURATION
+    if (this.isDying) {
+      this.deathTimer -= dt;
+      const t = Math.max(0, this.deathTimer / Enemy.DEATH_ANIM_DURATION);
+      this.mesh.scale.setScalar(t);
+      this.mesh.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          (obj.material as THREE.MeshStandardMaterial).opacity = t;
+        }
+      });
+      if (this.deathTimer <= 0) {
+        this.isDead = true;
+        this.mesh.visible = false;
+      }
+      return 0;
+    }
+
     const dx = playerPos.x - this.position.x;
     const dz = playerPos.z - this.position.z;
     const distSq = dx * dx + dz * dz;
@@ -121,7 +149,7 @@ export class Enemy {
       // Attack if close enough
       if (dist < 1.5 && this.attackCooldown <= 0) {
         const [minDmg, maxDmg] = this.def.meleeDmg;
-        dmg = minDmg + Math.random() * (maxDmg - minDmg);
+        dmg = (minDmg + Math.random() * (maxDmg - minDmg)) * this.scaleFactor;
         this.attackCooldown = 1.0; // 1 second between attacks
       }
     }
@@ -160,11 +188,19 @@ export class Enemy {
   }
 
   takeDamage(amount: number): void {
+    if (this.isDying || this.isDead) return;
     this.health -= amount;
     if (this.health <= 0) {
       this.health = 0;
-      this.isDead = true;
-      this.mesh.visible = false;
+      this.isDying = true;
+      this.deathTimer = Enemy.DEATH_ANIM_DURATION;
+      // Make materials transparent for fade-out
+      this.mesh.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          const mat = obj.material as THREE.MeshStandardMaterial;
+          mat.transparent = true;
+        }
+      });
     }
   }
 

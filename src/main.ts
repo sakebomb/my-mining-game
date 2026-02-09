@@ -22,6 +22,7 @@ import { TouchControls } from './input/TouchControls';
 import { SaveSystem, SaveData } from './save/SaveSystem';
 import { WinScreen } from './ui/WinScreen';
 import { BreakParticles } from './effects/BreakParticles';
+import { ENHANCEMENT_STAT_BOOST } from './config/constants';
 
 // --- Scene setup ---
 const container = document.querySelector<HTMLDivElement>('#app')!;
@@ -368,6 +369,13 @@ function updateSidePanel(): void {
   html += gearLine('Armor', 'armor') + '<br>';
   html += gearLine('Bag', 'backpack') + '<br>';
 
+  // Show effective defense stat
+  const armorDef = inventory.getEquippedDef('armor');
+  const baseDef = armorDef?.stats?.defense ?? 0;
+  const enhBonus = 1 + inventory.getEnhancementLevel('armor') * ENHANCEMENT_STAT_BOOST;
+  const effectiveDef = Math.round(baseDef * enhBonus * 10) / 10;
+  html += `<span style="color:#88ccff;font-size:12px">Defense: ${effectiveDef}</span><br>`;
+
   html += `<hr style="border-color:#555;margin:4px 0">`;
   html += `<span style="font-size:11px;color:#aaa">Bag: ${inventory.usedSlots}/${inventory.maxSlots}</span><br>`;
 
@@ -530,7 +538,12 @@ function animate(): void {
   if (!tradingUI.isOpen) {
     const enemyDmg = enemyManager.update(dt, player.position);
     if (enemyDmg > 0) {
-      player.health = Math.max(0, player.health - enemyDmg);
+      const armorDef = inventory.getEquippedDef('armor');
+      const defense = armorDef?.stats?.defense ?? 0;
+      const enhanceBonus = 1 + inventory.getEnhancementLevel('armor') * ENHANCEMENT_STAT_BOOST;
+      const effectiveDefense = defense * enhanceBonus;
+      const reduced = Math.max(1, enemyDmg - effectiveDefense);
+      player.health = Math.max(0, player.health - reduced);
       audio.play('player_hurt');
     }
     const hitEnemy = combat.update(dt, enemyManager.enemies);

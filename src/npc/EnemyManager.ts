@@ -35,7 +35,9 @@ export class EnemyManager {
       const dmg = enemy.update(dt, playerPos, this.world);
       totalDamage += dmg;
 
-      if (enemy.isDead) {
+      // Trigger drops when enemy starts dying (not after animation)
+      if (enemy.isDying && !enemy.deathHandled) {
+        enemy.deathHandled = true;
         this.onEnemyDeath?.(enemy);
       }
     }
@@ -101,7 +103,7 @@ export class EnemyManager {
 
     const isGlowing = Math.random() < def.glowChance;
     const spawnPos = new THREE.Vector3(spawnX, spawnY, spawnZ);
-    const enemy = new Enemy(def, spawnPos, isGlowing, this.scene);
+    const enemy = new Enemy(def, spawnPos, isGlowing, this.scene, depthLevel);
     this.enemies.push(enemy);
   }
 
