@@ -16,6 +16,7 @@ import { HelperNPC } from './npc/HelperNPC';
 import { TradingUI } from './ui/TradingUI';
 import { LightManager } from './world/LightManager';
 import { TeleportSystem } from './world/TeleportSystem';
+import { NPCZoneManager } from './world/NPCZoneManager';
 import { PhysicsWorld } from './physics/PhysicsWorld';
 import { AudioManager } from './audio/AudioManager';
 import { TouchControls } from './input/TouchControls';
@@ -42,29 +43,28 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.BasicShadowMap;
 container.appendChild(renderer.domElement);
 
 // --- Device detection ---
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-// --- Post-processing (bloom — skip on low-end devices) ---
-const isLowEnd = (navigator.hardwareConcurrency ?? 8) <= 4;
+// --- Post-processing (bloom — skip on low-end / mobile devices) ---
+const isLowEnd = (navigator.hardwareConcurrency ?? 8) <= 4 || isMobile;
 let composer: EffectComposer | null = null;
 
 if (!isLowEnd) {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
 
-  const bloomScale = isMobile ? 0.5 : 1.0;
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(
-      window.innerWidth * bloomScale,
-      window.innerHeight * bloomScale,
+      window.innerWidth * 0.5,
+      window.innerHeight * 0.5,
     ),
-    0.4,  // strength — subtle glow
-    0.6,  // radius
-    0.85, // threshold — only bright emissive surfaces bloom
+    0.2,  // strength — very subtle glow
+    0.4,  // radius
+    0.9,  // threshold — only brightest surfaces bloom
   );
   composer.addPass(bloomPass);
 }
@@ -73,7 +73,7 @@ if (!isLowEnd) {
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
 sun.position.set(30, 50, 30);
 sun.castShadow = true;
-sun.shadow.mapSize.setScalar(isMobile ? 1024 : 2048);
+sun.shadow.mapSize.setScalar(1024);
 sun.shadow.camera.near = 0.5;
 sun.shadow.camera.far = 150;
 sun.shadow.camera.left = -50;
@@ -144,7 +144,7 @@ const buyerNPC = new NPC({
   position: new THREE.Vector3(5, 0.0, 5),
   color: 0x44aa44,
   interactRadius: 3,
-  role: 'Buy Here',
+  role: 'Sell stuff here',
 }, scene);
 
 const sellerNPC = new NPC({
@@ -152,7 +152,7 @@ const sellerNPC = new NPC({
   position: new THREE.Vector3(-5, 0.0, 5),
   color: 0x4488cc,
   interactRadius: 3,
-  role: 'Sell Here',
+  role: 'Buy stuff here',
 }, scene);
 
 const npcs = [buyerNPC, sellerNPC];
@@ -657,8 +657,19 @@ window.addEventListener('keydown', (e) => {
         // Place teleport pads once all chunks are generated, then rebuild affected meshes
         padsPlaced = true;
         teleportSystem.placePads();
+
+        // Place NPC stone patios, then enable protection
+        const npcZoneManager = new NPCZoneManager(world);
+        npcZoneManager.placePatios();
+        world.setNPCZoneManager(npcZoneManager);
+        mining.setNPCZoneManager(npcZoneManager);
+
         world.update(player.position.x, player.position.y, player.position.z);
       }
+
+      // Ensure the player isn't stuck inside solid blocks (e.g. old save
+      // position now overlaps newly-placed NPC patios).
+      player.unstuck();
 
       // Loading complete — hide overlay, show instructions, start game
       loadingOverlay.style.opacity = '0';
