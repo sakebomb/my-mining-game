@@ -43,29 +43,28 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.type = THREE.BasicShadowMap;
 container.appendChild(renderer.domElement);
 
 // --- Device detection ---
 const isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-// --- Post-processing (bloom — skip on low-end devices) ---
-const isLowEnd = (navigator.hardwareConcurrency ?? 8) <= 4;
+// --- Post-processing (bloom — skip on low-end / mobile devices) ---
+const isLowEnd = (navigator.hardwareConcurrency ?? 8) <= 4 || isMobile;
 let composer: EffectComposer | null = null;
 
 if (!isLowEnd) {
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
 
-  const bloomScale = isMobile ? 0.5 : 1.0;
   const bloomPass = new UnrealBloomPass(
     new THREE.Vector2(
-      window.innerWidth * bloomScale,
-      window.innerHeight * bloomScale,
+      window.innerWidth * 0.5,
+      window.innerHeight * 0.5,
     ),
-    0.4,  // strength — subtle glow
-    0.6,  // radius
-    0.85, // threshold — only bright emissive surfaces bloom
+    0.2,  // strength — very subtle glow
+    0.4,  // radius
+    0.9,  // threshold — only brightest surfaces bloom
   );
   composer.addPass(bloomPass);
 }
@@ -74,7 +73,7 @@ if (!isLowEnd) {
 const sun = new THREE.DirectionalLight(0xffffff, 1.8);
 sun.position.set(30, 50, 30);
 sun.castShadow = true;
-sun.shadow.mapSize.setScalar(isMobile ? 1024 : 2048);
+sun.shadow.mapSize.setScalar(1024);
 sun.shadow.camera.near = 0.5;
 sun.shadow.camera.far = 150;
 sun.shadow.camera.left = -50;
@@ -667,6 +666,10 @@ window.addEventListener('keydown', (e) => {
 
         world.update(player.position.x, player.position.y, player.position.z);
       }
+
+      // Ensure the player isn't stuck inside solid blocks (e.g. old save
+      // position now overlaps newly-placed NPC patios).
+      player.unstuck();
 
       // Loading complete — hide overlay, show instructions, start game
       loadingOverlay.style.opacity = '0';

@@ -63,13 +63,27 @@ export class NPC {
       ctx.fillStyle = '#a0784c';
       ctx.fillRect(0, 0, 128, 64);
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 22px monospace';
+      ctx.font = 'bold 18px monospace';
       ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(config.role, 64, 32);
+      // Wrap text onto two lines
+      const words = config.role.split(' ');
+      const mid = Math.ceil(words.length / 2);
+      const line1 = words.slice(0, mid).join(' ');
+      const line2 = words.slice(mid).join(' ');
+      if (line2) {
+        ctx.fillText(line1, 64, 24);
+        ctx.fillText(line2, 64, 48);
+      } else {
+        ctx.textBaseline = 'middle';
+        ctx.fillText(line1, 64, 32);
+      }
       const boardTex = new THREE.CanvasTexture(boardCanvas);
-      const boardMat = new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.8 });
-      const board = new THREE.Mesh(boardGeo, boardMat);
+      const plainMat = new THREE.MeshStandardMaterial({ color: 0xa0784c, roughness: 0.8 });
+      const textMat = new THREE.MeshStandardMaterial({ map: boardTex, roughness: 0.8 });
+      // Box faces: +x, -x, +y, -y, +z (front), -z (back)
+      const board = new THREE.Mesh(boardGeo, [
+        plainMat, plainMat, plainMat, plainMat, textMat, textMat,
+      ]);
       board.position.y = 1.2;
       board.castShadow = true;
       signGroup.add(board);

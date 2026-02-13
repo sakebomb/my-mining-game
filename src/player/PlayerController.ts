@@ -206,9 +206,13 @@ export class PlayerController {
 
   private collidesAt(pos: THREE.Vector3): boolean {
     // Player AABB: centered at pos.x, pos.z; from pos.y to pos.y + PLAYER_HEIGHT
+    // Skin width (0.005m) on the bottom prevents the player's feet from
+    // registering as overlapping the block they are standing on, which would
+    // otherwise block all horizontal movement at exact block boundaries.
+    const SKIN = 0.005;
     const minX = pos.x - PLAYER_RADIUS;
     const maxX = pos.x + PLAYER_RADIUS;
-    const minY = pos.y;
+    const minY = pos.y + SKIN;
     const maxY = pos.y + PLAYER_HEIGHT;
     const minZ = pos.z - PLAYER_RADIUS;
     const maxZ = pos.z + PLAYER_RADIUS;
@@ -259,6 +263,17 @@ export class PlayerController {
       }
     }
     return false;
+  }
+
+  /** Push the player upward until they are no longer inside solid blocks. */
+  unstuck(): void {
+    const maxAttempts = 20;
+    for (let i = 0; i < maxAttempts; i++) {
+      if (!this.collidesAt(this.position)) break;
+      this.position.y += BLOCK_SIZE;
+    }
+    this.velocity.set(0, 0, 0);
+    this.onGround = false;
   }
 
   /** Get the direction the player is looking */
